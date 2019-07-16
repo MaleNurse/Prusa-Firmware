@@ -1,6 +1,6 @@
-#!/bin/bash 
+#!/bin/bash
 # This bash script is used to compile automatically the Prusa firmware with a dedicated build environment and settings
-# 
+#
 # Supported OS: Windows 10, Linux64 bit
 #
 # Linux:
@@ -31,12 +31,12 @@
 # Useful things to edit and compare your custom Firmware
 # 1. Download and install current and correct (64bit or 32bit) Notepad++ version https://notepad-plus-plus.org/download
 # 2. Another great tool to compare your custom mod and stock firmware is WinMerge http://winmerge.org/downloads/?lang=en
-# 
-# Example for MK3: open git bash and change to your Firmware directory 
+#
+# Example for MK3: open git bash and change to your Firmware directory
 # <username>@<machinename> MINGW64 /<drive>/path
 # bash build.sh 1_75mm_MK3-EINSy10a-E3Dv6full
 #
-# Example for MK25: open git bash and change to your directory 
+# Example for MK25: open git bash and change to your directory
 # gussner@WIN01 MINGW64 /d/Data/Prusa-Firmware/MK3
 # bash build.sh 1_75mm_MK25-RAMBo13a-E3Dv6full
 #
@@ -51,7 +51,7 @@
 # 17 Jan 2019, 3d-gussner, Build_3, Check for OS Windows or Linux and use the right build enviroment
 # 10 Feb 2019, ropaha, Pull Request, Select variant from list while using build.sh
 # 10 Feb 2019, ropaha, change FW_DEV_VERSION automatically depending on FW_VERSION RC/BETA/ALPHA
-# 10 Feb 2019, 3d-gussner, 1st tests with english only 
+# 10 Feb 2019, 3d-gussner, 1st tests with english only
 # 10 Feb 2019, ropaha, added compiling of all variants and english only
 # 10 Feb 2019, 3d-gussner, Set OUTPUT_FOLDER for hex files
 # 11 Feb 2019, 3d-gussner/ropaha, Minor changes and fixes
@@ -119,7 +119,8 @@ if ! type zip > /dev/null; then
 fi
 ###End prepare bash enviroment
 
-BUILD_ENV="1.0.2"
+ARDUINO_ENV="1.8.5"
+BUILD_ENV="1.0.6"
 SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
 # List few useful data
@@ -147,40 +148,55 @@ if [ ! -d "../PF-build-env-$BUILD_ENV" ]; then
 fi
 
 if [ $OSTYPE == "msys" ]; then
-	if [ ! -f "PF-build-env-Win-$BUILD_ENV.zip" ]; then
-		echo "$(tput setaf 6)Downloading Windows build environment...$(tput setaf 2)"
+	if [ ! -f "arduino-$ARDUINO_ENV-windows.zip" ]; then
+		echo "$(tput setaf 6)Downloading Arduino IDE portal...$(tput setaf 2)"
 		sleep 2
-		wget https://github.com/3d-gussner/PF-build-env/releases/download/Win-$BUILD_ENV/PF-build-env-Win-$BUILD_ENV.zip || exit 4
-		#cp -f ../../PF-build-env/PF-build-env-Win-$BUILD_ENV.zip PF-build-env-Win-$BUILD_ENV.zip || exit4
+		wget --no-check-certificate https://downloads.arduino.cc/arduino-$ARDUINO_ENV-windows.zip || exit 4
+		echo "$(tput sgr 0)"
 		echo "$(tput sgr 0)"
 	fi
-	if [ ! -d "../PF-build-env-$BUILD_ENV/$OSTYPE" ]; then
-		echo "$(tput setaf 6)Unzipping Windows build environment...$(tput setaf 2)"
+	if [ ! -e "../PF-build-env-$BUILD_ENV/arduino-$ARDUINO_ENV-windows" ]; then
+		echo "$(tput setaf 6)Unzipping Arduino IDE portal...$(tput setaf 2)"
 		sleep 2
-		unzip PF-build-env-Win-$BUILD_ENV.zip -d ../PF-build-env-$BUILD_ENV/$OSTYPE || exit 4
+		unzip arduino-$ARDUINO_ENV-windows.zip -d ../PF-build-env-$BUILD_ENV || exit 4
+		mv ../PF-build-env-$BUILD_ENV/arduino-$ARDUINO_ENV ../PF-build-env-$BUILD_ENV/$OSTYPE
+		echo "# arduino-$ARDUINO_ENV-windows" >> ../PF-build-env-$BUILD_ENV/arduino-$ARDUINO_ENV-windows
 		echo "$(tput sgr0)"
 	fi
-	
 fi
-
 if [ $OSTYPE == "linux-gnu" ]; then
-	if [ ! -f "PF-build-env-Linux64-$BUILD_ENV.zip" ]; then
-		echo "$(tput setaf 6)Downloading Linux 64 build environment...$(tput setaf 2)"
+	if [ ! -f "arduino-$ARDUINO_ENV-linux64.tar.xz" ]; then
+		echo "$(tput setaf 6)Downloading Arduino IDE portal...$(tput setaf 2)"
 		sleep 2
-		wget https://github.com/mkbel/PF-build-env/releases/download/$BUILD_ENV/PF-build-env-Linux64-$BUILD_ENV.zip || exit 3
+		wget --no-check-certificate https://downloads.arduino.cc/arduino-$ARDUINO_ENV-linux64.tar.xz || exit 4
+		echo "$(tput sgr 0)"
+		echo "$(tput sgr 0)"
+	fi
+	if [ ! -e "../PF-build-env-$BUILD_ENV/arduino-$ARDUINO_ENV-linux64" ]; then
+		echo "$(tput setaf 6)Unzipping Arduino IDE portal...$(tput setaf 2)"
+		sleep 2
+		tar -xvf arduino-$ARDUINO_ENV-linux64.tar.xz -C ../PF-build-env-$BUILD_ENV/ || exit 4
+		mv ../PF-build-env-$BUILD_ENV/arduino-$ARDUINO_ENV ../PF-build-env-$BUILD_ENV/$OSTYPE
+		echo "# arduino-$ARDUINO_ENV-linux64" >> ../PF-build-env-$BUILD_ENV/arduino-$ARDUINO_ENV-linux64
 		echo "$(tput sgr0)"
 	fi
-
-	if [ ! -d "../PF-build-env-$BUILD_ENV/$OSTYPE" ]; then
-		echo "$(tput setaf 6)Unzipping Linux build enviroment...$(tput setaf 2)"
-		sleep 2
-		unzip PF-build-env-Linux64-$BUILD_ENV.zip -d ../PF-build-env-$BUILD_ENV/$OSTYPE || exit 4
-		echo "$(tput sgr0)"
-	fi
+fi
+if [ ! -f "PF-build-env-$BUILD_ENV.zip" ]; then
+	echo "$(tput setaf 6)Downloading Prusa Firmware build environment...$(tput setaf 2)"
+	sleep 2
+	wget --no-check-certificate https://github.com/deliopoulos/PF-build-env/releases/download/$BUILD_ENV/PF-build-env-$BUILD_ENV.zip || exit 4
+	echo "$(tput sgr 0)"
+fi
+if [ ! -e "../PF-build-env-$BUILD_ENV/PF-build-env-$OSTYPE-$BUILD_ENV" ]; then
+	echo "$(tput setaf 6)Unzipping Prusa Firmware build environment...$(tput setaf 2)"
+	sleep 2
+	unzip -o PF-build-env-$BUILD_ENV.zip -d ../PF-build-env-$BUILD_ENV/$OSTYPE || exit 4
+	echo "# PF-build-env-$OSTYPE-$BUILD_ENV" >> ../PF-build-env-$BUILD_ENV/PF-build-env-$OSTYPE-$BUILD_ENV
+	echo "$(tput sgr0)"
 fi
 cd $SCRIPT_PATH
 
-# First argument defines which variant of the Prusa Firmware will be compiled 
+# First argument defines which variant of the Prusa Firmware will be compiled
 if [ -z "$1" ] ; then
 	# Select which variant of the Prusa Firmware will be compiled, like
 	PS3="Select a variant: "
@@ -209,7 +225,7 @@ if [ -z "$1" ] ; then
 		esac
 	done
 else
-	if [ -f "$SCRIPT_PATH/Firmware/variants/$1" ] ; then 
+	if [ -f "$SCRIPT_PATH/Firmware/variants/$1" ] ; then
 		VARIANTS=$1
 	else
 		echo "$(tput setaf 1)$1 could not be found in Firmware/variants please choose a valid one$(tput setaf 2)"
@@ -234,7 +250,7 @@ if [ -z "$2" ] ; then
 				sed -i -- "s/^#define LANG_MODE *0/#define LANG_MODE              1/g" $SCRIPT_PATH/Firmware/config.h
 				break
 				;;
-			"English only") 
+			"English only")
 				LANGUAGES="EN_ONLY"
 				sed -i -- "s/^#define LANG_MODE *1/#define LANG_MODE              0/g" $SCRIPT_PATH/Firmware/config.h
 				break
@@ -313,7 +329,7 @@ do
 						DEV_STATUS_SELECTED="GOLD"
 						break
 						;;
-					No) 
+					No)
 						DEV_STATUS="UNKNOWN"
 						DEV_STATUS_SELECTED="UNKNOWN"
 						break
@@ -332,7 +348,7 @@ do
 		mkdir -p $SCRIPT_PATH/../Hex-files/FW$FW-Build$BUILD/$MOTHERBOARD || exit 10
 	fi
 	OUTPUT_FOLDER="Hex-files/FW$FW-Build$BUILD/$MOTHERBOARD"
-	
+
 	#Check if exactly the same hexfile already exists
 	if [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.hex"  &&  "$LANGUAGES" == "ALL" ]]; then
 		echo ""
@@ -351,7 +367,7 @@ do
 		echo "$(tput setaf 6)This zip file to be compiled already exists! To cancel this process press CRTL+C and rename existing hex file.$(tput sgr 0)"
 		read -t 10 -p "Press Enter to continue..."
 	fi
-	
+
 	#List some useful data
 	echo "$(tput setaf 2)$(tput setab 7) "
 	echo "Variant    :" $VARIANT
@@ -389,53 +405,26 @@ do
 		echo "English only language firmware will be built"
 		echo " "
 	fi
-		
+
 	#Check if compiler flags are set to Prusa specific needs for the rambo board.
 	if [ $OSTYPE == "msys" ]; then
-		RAMBO_PLATFORM_FILE="rambo/hardware/avr/1.0.1/platform.txt"
-		COMP_FLAGS="compiler.c.elf.flags={compiler.warning_flags} -Os -g -flto -fuse-linker-plugin -Wl,-u,vfprintf -lprintf_flt -lm -Wl,--gc-sections"
-		CHECK_FLAGS=$(grep --max-count=1 "$COMP_FLAGS" $BUILD_ENV_PATH/portable/packages/$RAMBO_PLATFORM_FILE)
-		if [ -z "$CHECK_FLAGS" ]; then
-			echo "Compiler flags not found, adding flags"
-			if [ ! -f $BUILD_ENV_PATH/portable/packages/$RAMBO_PLATFORM_FILE.bck ]; then
-				echo "making a backup"
-				ls -1 $BUILD_ENV_PATH/portable/packages/rambo/hardware/avr/1.0.1/
-				cp -f $BUILD_ENV_PATH/portable/packages/$RAMBO_PLATFORM_FILE $BUILD_ENV_PATH/portable/packages/$RAMBO_PLATFORM_FILE.bck
-			fi
-			echo $COMP_FLAGS >> $BUILD_ENV_PATH/portable/packages/$RAMBO_PLATFORM_FILE
-		else
-			echo "Compiler flags are set in rambo platform.txt" $CHECK_FLAGS
-		fi
-	fi	
-	
+		RAMBO_PLATFORM_FILE="PrusaResearchRambo/avr/platform.txt"
+	fi
+
 	#### End of Prepare building
-		
+
 	#### Start building
-		
+
 	export ARDUINO=$BUILD_ENV_PATH
-	#echo $BUILD_ENV_PATH
-	export BUILDER=$ARDUINO/arduino-builder
 
 	echo
 	#read -t 5 -p "Press Enter..."
-	echo 
+	echo
 
-	if [ $OSTYPE == "msys" ]; then
-		echo "Start to build Prusa Firmware under Windows..."
-		echo "Using variant $VARIANT$(tput setaf 3)"
-		sleep 2
-		#$BUILDER -dump-prefs -logger=machine -hardware $ARDUINO/hardware -hardware $ARDUINO/portable/packages -tools $ARDUINO/tools-builder -tools $ARDUINO/hardware/tools/avr -tools $ARDUINO/portable/packages -built-in-libraries $ARDUINO/libraries -libraries $ARDUINO/portable/sketchbook/libraries -fqbn=rambo:avr:rambo -ide-version=10805 -build-path=$BUILD_PATH -warnings=none -quiet $SCRIPT_PATH/Firmware/Firmware.ino || exit 12
-		#$BUILDER -compile -logger=machine -hardware $ARDUINO/hardware -hardware $ARDUINO/portable/packages -tools $ARDUINO/tools-builder -tools $ARDUINO/hardware/tools/avr -tools $ARDUINO/portable/packages -built-in-libraries $ARDUINO/libraries -libraries $ARDUINO/portable/sketchbook/libraries -fqbn=rambo:avr:rambo -ide-version=10805 -build-path=$BUILD_PATH -warnings=none -quiet $SCRIPT_PATH/Firmware/Firmware.ino || exit 13
-		$BUILDER -compile -hardware $ARDUINO/hardware -hardware $ARDUINO/portable/packages -tools $ARDUINO/tools-builder -tools $ARDUINO/hardware/tools/avr -tools $ARDUINO/portable/packages -built-in-libraries $ARDUINO/libraries -libraries $ARDUINO/portable/sketchbook/libraries -fqbn=rambo:avr:rambo -ide-version=10805 -build-path=$BUILD_PATH -warnings=all $SCRIPT_PATH/Firmware/Firmware.ino || exit 14
-		echo "$(tput sgr 0)"
-	fi
-	if [ $OSTYPE == "linux-gnu" ] ; then
-		echo "Start to build Prusa Firmware under Linux 64..."
-		echo "Using variant $VARIANT$(tput setaf 3)"
-		sleep 2
-		$BUILD_ENV_PATH/arduino $SCRIPT_PATH/Firmware/Firmware.ino --verify --board rambo:avr:rambo --pref build.path=$BUILD_PATH --pref compiler.warning_level=all || exit 14
-		echo "$(tput sgr 0)"
-	fi
+	echo "Start to build Prusa Firmware..."
+	## $BUILD_ENV_PATH/arduino-builder -compile -hardware $ARDUINO/hardware -hardware $ARDUINO/portable/packages -tools $ARDUINO/tools-builder -tools $ARDUINO/hardware/tools/avr -tools $ARDUINO/portable/packages -built-in-libraries $ARDUINO/libraries -libraries $ARDUINO/portable/sketchbook/libraries -fqbn=PrusaResearchRambo:avr:rambo -ide-version=10805 -build-path=$BUILD_PATH -warnings=all $SCRIPT_PATH/Firmware/Firmware.ino || exit 14
+		$BUILD_ENV_PATH/arduino-builder -compile -hardware $ARDUINO/hardware -tools $ARDUINO/tools-builder -tools $ARDUINO/hardware/tools/avr -built-in-libraries $ARDUINO/libraries -fqbn=PrusaResearchRambo:avr:rambo -ide-version=10805 -build-path=$BUILD_PATH -warnings=default $SCRIPT_PATH/Firmware/Firmware.ino || exit 14
+	echo "$(tput sgr 0)"
 
 	if [ $LANGUAGES ==  "ALL" ]; then
 		echo "$(tput setaf 2)"
@@ -466,7 +455,7 @@ do
 		# build languages
 		echo "$(tput setaf 3)"
 		./lang-build.sh || exit 16
-		# Combine compiled firmware with languages 
+		# Combine compiled firmware with languages
 		./fw-build.sh || exit 17
 		echo "$(tput sgr 0)"
 		# Check if the motherboard is an EINSY and if so only one hex file will generated
@@ -483,7 +472,7 @@ do
 			cp -f firmware_fr.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-fr.hex
 			cp -f firmware_it.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-it.hex
 			cp -f firmware_pl.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-pl.hex
-			if [ $OSTYPE == "msys" ]; then 
+			if [ $OSTYPE == "msys" ]; then
 				zip a $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.zip $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-??.hex
 				rm $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-??.hex
 			elif [ $OSTYPE == "linux-gnu" ]; then
@@ -516,7 +505,7 @@ done
 #	echo " "
 #	echo "Restore Windows platform.txt"
 #	echo " "
-#	cp -f $BUILD_ENV_PATH/portable/packages/$RAMBO_PLATFORM_FILE.bck $BUILD_ENV_PATH/portable/packages/$RAMBO_PLATFORM_FILE
+#	cp -f $BUILD_ENV_PATH/hardware/$RAMBO_PLATFORM_FILE.bck $BUILD_ENV_PATH/hardware/$RAMBO_PLATFORM_FILE
 #fi
 
 # Switch to hex path and list build files
