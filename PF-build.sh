@@ -344,26 +344,26 @@ do
 		DEV_STATUS=$DEV_STATUS_SELECTED
 	fi
 	#Prepare hex files folders
-	if [ ! -d "$SCRIPT_PATH/../Hex-files/FW$FW-Build$BUILD/$MOTHERBOARD" ]; then
-		mkdir -p $SCRIPT_PATH/../Hex-files/FW$FW-Build$BUILD/$MOTHERBOARD || exit 10
+	if [ ! -d "$SCRIPT_PATH/../Hex-files" ]; then
+		mkdir -p $SCRIPT_PATH/../Hex-files || exit 10
 	fi
-	OUTPUT_FOLDER="Hex-files/FW$FW-Build$BUILD/$MOTHERBOARD"
+	OUTPUT_FOLDER="Hex-files"
 
 	#Check if exactly the same hexfile already exists
-	if [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.hex"  &&  "$LANGUAGES" == "ALL" ]]; then
+	if [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT.hex"  &&  "$LANGUAGES" == "ALL" ]]; then
 		echo ""
-		ls -1 $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.hex | xargs -n1 basename
+		ls -1 $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT.hex | xargs -n1 basename
 		echo "$(tput setaf 6)This hex file to be compiled already exists! To cancel this process press CRTL+C and rename existing hex file.$(tput sgr 0)"
 		read -t 10 -p "Press Enter to continue..."
-	elif [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-EN_ONLY.hex"  &&  "$LANGUAGES" == "EN_ONLY" ]]; then
+	elif [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-EN_ONLY.hex"  &&  "$LANGUAGES" == "EN_ONLY" ]]; then
 		echo ""
-		ls -1 $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-EN_ONLY.hex | xargs -n1 basename
+		ls -1 $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-EN_ONLY.hex | xargs -n1 basename
 		echo "$(tput setaf 6)This hex file to be compiled already exists! To cancel this process press CRTL+C and rename existing hex file.$(tput sgr 0)"
 		read -t 10 -p "Press Enter to continue..."
 	fi
-	if [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.zip"  &&  "$LANGUAGES" == "ALL" ]]; then
+	if [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT.zip"  &&  "$LANGUAGES" == "ALL" ]]; then
 		echo ""
-		ls -1 $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.zip | xargs -n1 basename
+		ls -1 $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT.zip | xargs -n1 basename
 		echo "$(tput setaf 6)This zip file to be compiled already exists! To cancel this process press CRTL+C and rename existing hex file.$(tput sgr 0)"
 		read -t 10 -p "Press Enter to continue..."
 	fi
@@ -463,20 +463,20 @@ do
 		# If the motherboard is an EINSY just copy one hexfile
 		if [ "$MOTHERBOARD" = "BOARD_EINSY_1_0a" ]; then
 			echo "$(tput setaf 2)Copying multi language firmware for MK3/Einsy board to Hex-files folder$(tput sgr 0)"
-			cp -f firmware.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.hex
+			cp -f firmware.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT.hex
 		else
 			echo "$(tput setaf 2)Zip multi language firmware for MK2.5/miniRAMbo board to Hex-files folder$(tput sgr 0)"
-			cp -f firmware_cz.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-cz.hex
-			cp -f firmware_de.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-de.hex
-			cp -f firmware_es.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-es.hex
-			cp -f firmware_fr.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-fr.hex
-			cp -f firmware_it.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-it.hex
-			cp -f firmware_pl.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-pl.hex
+			cp -f firmware_cz.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-cz.hex
+			cp -f firmware_de.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-de.hex
+			cp -f firmware_es.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-es.hex
+			cp -f firmware_fr.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-fr.hex
+			cp -f firmware_it.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-it.hex
+			cp -f firmware_pl.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-pl.hex
 			if [ $OSTYPE == "msys" ]; then
-				zip a $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.zip $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-??.hex
-				rm $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-??.hex
+				zip a $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT.zip $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-??.hex
+				rm $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-??.hex
 			elif [ $OSTYPE == "linux-gnu" ]; then
-				zip -m -j ../../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.zip ../../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-??.hex
+				zip -m -j ../../$OUTPUT_FOLDER/FW$FW-$VARIANT.zip ../../$OUTPUT_FOLDER/FW$FW-$VARIANT-??.hex
 			fi
 		fi
 		# Cleanup after build
@@ -486,7 +486,7 @@ do
 		echo "$(tput sgr 0)"
 	else
 		echo "$(tput setaf 2)Copying English only firmware to Hex-files folder$(tput sgr 0)"
-		cp -f $BUILD_PATH/Firmware.ino.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-EN_ONLY.hex || exit 20
+		cp -f $BUILD_PATH/Firmware.ino.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-EN_ONLY.hex || exit 20
 	fi
 
 	# Cleanup Firmware
