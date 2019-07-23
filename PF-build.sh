@@ -1,6 +1,6 @@
-#!/bin/bash 
+#!/bin/bash
 # This bash script is used to compile automatically the Prusa firmware with a dedicated build environment and settings
-# 
+#
 # Supported OS: Windows 10, Linux64 bit
 # Beta OS: Linux32 bit
 #
@@ -35,12 +35,12 @@
 # Useful things to edit and compare your custom Firmware
 # 1. Download and install current and correct (64bit or 32bit) Notepad++ version https://notepad-plus-plus.org/download
 # 2. Another great tool to compare your custom mod and stock firmware is WinMerge http://winmerge.org/downloads/?lang=en
-# 
-# Example for MK3: open git bash and change to your Firmware directory 
+#
+# Example for MK3: open git bash and change to your Firmware directory
 # <username>@<machinename> MINGW64 /<drive>/path
 # bash build.sh 1_75mm_MK3-EINSy10a-E3Dv6full
 #
-# Example for MK25: open git bash and change to your directory 
+# Example for MK25: open git bash and change to your directory
 # gussner@WIN01 MINGW64 /d/Data/Prusa-Firmware/MK3
 # bash build.sh 1_75mm_MK25-RAMBo13a-E3Dv6full
 #
@@ -63,7 +63,7 @@
 # 17 Jan 2019, 3d-gussner, Build_3, Check for OS Windows or Linux and use the right build environment
 # 10 Feb 2019, ropaha, Pull Request, Select variant from list while using build.sh
 # 10 Feb 2019, ropaha, change FW_DEV_VERSION automatically depending on FW_VERSION RC/BETA/ALPHA
-# 10 Feb 2019, 3d-gussner, 1st tests with english only 
+# 10 Feb 2019, 3d-gussner, 1st tests with english only
 # 10 Feb 2019, ropaha, added compiling of all variants and english only
 # 10 Feb 2019, 3d-gussner, Set OUTPUT_FOLDER for hex files
 # 11 Feb 2019, 3d-gussner/ropaha, Minor changes and fixes
@@ -100,7 +100,7 @@
 # 14 Jul 2019, 3d-gussner, Update preferences and make it really portable
 # 15 Jul 2019, 3d-gussner, New PF-build-env gihub branch
 # 16 Jul 2019, 3d-gussner, New Arduino_boards github fork
-# 17 Jul 2019, 3d-gussner, Final tests under Windows 10 and Linux Subsystem for Windows   
+# 17 Jul 2019, 3d-gussner, Final tests under Windows 10 and Linux Subsystem for Windows
 # 18 Jul 2019, 3d-gussner, Added python check
 # 18 Jul 2019, deliopoulos, No need more for changing 'platform.txt' file as it comes with the Arduino Boards.
 # 18 Jul 2019, deliopoulos, Modified 'PF_BUILD_FILE_URL' to use 'BUILD_ENV' variable
@@ -182,7 +182,7 @@ fi
 #### End prepare bash environment
 
 
-#### Set build environment 
+#### Set build environment
 ARDUINO_ENV="1.8.5"
 BUILD_ENV="1.0.6"
 BOARD="PrusaResearchRambo"
@@ -324,11 +324,11 @@ if [[ ! -d "../PF-build-env-$BUILD_ENV/$OSTYPE-$Processor/portable/packages/$BOA
 	if [ ! -d ../PF-build-env-$BUILD_ENV/$OSTYPE-$Processor/portable/packages/$BOARD/hardware/avr ]; then
 		mkdir ../PF-build-env-$BUILD_ENV/$OSTYPE-$Processor/portable/packages/$BOARD/hardware/avr
 	fi
-	
+
 	mv ../PF-build-env-$BUILD_ENV/$BOARD_FILENAME-$BOARD_VERSION ../PF-build-env-$BUILD_ENV/$OSTYPE-$Processor/portable/packages/$BOARD/hardware/avr/$BOARD_VERSION
 	echo "# $BOARD_FILENAME-$BOARD_VERSION" >> ../PF-build-env-$BUILD_ENV/$BOARD_FILENAME-$BOARD_VERSION-$OSTYPE-$Processor.txt
 	echo "$(tput sgr 0)"
-fi	
+fi
 
 # Download and extract Prusa Firmware specific library files
 if [ ! -f "PF-build-env-$BUILD_ENV.zip" ]; then
@@ -350,7 +350,7 @@ if [ -d "../PF-build-env-$BUILD_ENV/$OSTYPE-$Processor/portable/packages/arduino
 	echo "$(tput setaf 6)Arduino IDE boards / tools have been manually updated...$"
 	echo "Please don't update the 'Arduino AVR boards' as this will prevent running this script (tput setaf 2)"
 	sleep 2
-fi	
+fi
 if [ -d "../PF-build-env-$BUILD_ENV/$OSTYPE-$Processor/portable/packages/arduino/tools/avr-gcc/4.9.2-atmel3.5.4-arduino2" ]; then
 	echo "$(tput setaf 6)PrusaReasearch compatible tools have been manually updated...$(tput setaf 2)"
 	sleep 2
@@ -359,7 +359,7 @@ if [ -d "../PF-build-env-$BUILD_ENV/$OSTYPE-$Processor/portable/packages/arduino
 	cp -f ../PF-build-env-$BUILD_ENV/$OSTYPE-$Processor/hardware/tools/avr/avr/lib/ldscripts/avr6.xn ../PF-build-env-$BUILD_ENV/$OSTYPE-$Processor/portable/packages/arduino/tools/avr-gcc/4.9.2-atmel3.5.4-arduino2/avr/lib/ldscripts/avr6.xn
 	echo "# PF-build-env-portable-$OSTYPE-$Processor-$BUILD_ENV" >> ../PF-build-env-$BUILD_ENV/PF-build-env-portable-$BUILD_ENV-$OSTYPE-$Processor.txt
 	echo "$(tput sgr0)"
-fi	
+fi
 if [ -d "../PF-build-env-$BUILD_ENV/$OSTYPE-$Processor/portable/packages/arduino/tools/avr-gcc/5.4.0-atmel3.6.1-arduino2" ]; then
 	echo "$(tput setaf 1)Arduino IDE tools have been updated manually to a non supported version!!!"
 	echo "Delete ../PF-build-env-$BUILD_ENV and start the script again"
@@ -373,10 +373,10 @@ fi
 #### End prepare building
 
 
-#### Start 
+#### Start
 cd $SCRIPT_PATH
 
-# First argument defines which variant of the Prusa Firmware will be compiled 
+# First argument defines which variant of the Prusa Firmware will be compiled
 if [ -z "$1" ] ; then
 	# Select which variant of the Prusa Firmware will be compiled, like
 	PS3="Select a variant: "
@@ -405,7 +405,7 @@ if [ -z "$1" ] ; then
 		esac
 	done
 else
-	if [ -f "$SCRIPT_PATH/Firmware/variants/$1" ] ; then 
+	if [ -f "$SCRIPT_PATH/Firmware/variants/$1" ] ; then
 		VARIANTS=$1
 	else
 		echo "$(tput setaf 1)$1 could not be found in Firmware/variants please choose a valid one$(tput setaf 2)"
@@ -430,7 +430,7 @@ if [ -z "$2" ] ; then
 				sed -i -- "s/^#define LANG_MODE *0/#define LANG_MODE              1/g" $SCRIPT_PATH/Firmware/config.h
 				break
 				;;
-			"English only") 
+			"English only")
 				LANGUAGES="EN_ONLY"
 				sed -i -- "s/^#define LANG_MODE *1/#define LANG_MODE              0/g" $SCRIPT_PATH/Firmware/config.h
 				break
@@ -509,7 +509,7 @@ do
 						DEV_STATUS_SELECTED="GOLD"
 						break
 						;;
-					No) 
+					No)
 						DEV_STATUS="UNKNOWN"
 						DEV_STATUS_SELECTED="UNKNOWN"
 						break
@@ -524,30 +524,30 @@ do
 		DEV_STATUS=$DEV_STATUS_SELECTED
 	fi
 	#Prepare hex files folders
-	if [ ! -d "$SCRIPT_PATH/../Hex-files/FW$FW-Build$BUILD/$MOTHERBOARD" ]; then
-		mkdir -p $SCRIPT_PATH/../Hex-files/FW$FW-Build$BUILD/$MOTHERBOARD || exit 27
+	if [ ! -d "$SCRIPT_PATH/../Hex-files/" ]; then
+		mkdir -p $SCRIPT_PATH/../Hex-files || exit 27
 	fi
-	OUTPUT_FOLDER="Hex-files/FW$FW-Build$BUILD/$MOTHERBOARD"
-	
+	OUTPUT_FOLDER="Hex-files"
+
 	#Check if exactly the same hexfile already exists
-	if [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.hex"  &&  "$LANGUAGES" == "ALL" ]]; then
+	if [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT.hex"  &&  "$LANGUAGES" == "ALL" ]]; then
 		echo ""
-		ls -1 $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.hex | xargs -n1 basename
+		ls -1 $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT.hex | xargs -n1 basename
 		echo "$(tput setaf 6)This hex file to be compiled already exists! To cancel this process press CRTL+C and rename existing hex file.$(tput sgr 0)"
 		read -t 10 -p "Press Enter to continue..."
-	elif [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-EN_ONLY.hex"  &&  "$LANGUAGES" == "EN_ONLY" ]]; then
+	elif [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-EN_ONLY.hex"  &&  "$LANGUAGES" == "EN_ONLY" ]]; then
 		echo ""
-		ls -1 $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-EN_ONLY.hex | xargs -n1 basename
+		ls -1 $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-EN_ONLY.hex | xargs -n1 basename
 		echo "$(tput setaf 6)This hex file to be compiled already exists! To cancel this process press CRTL+C and rename existing hex file.$(tput sgr 0)"
 		read -t 10 -p "Press Enter to continue..."
 	fi
-	if [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.zip"  &&  "$LANGUAGES" == "ALL" ]]; then
+	if [[ -f "$SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT.zip"  &&  "$LANGUAGES" == "ALL" ]]; then
 		echo ""
-		ls -1 $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.zip | xargs -n1 basename
+		ls -1 $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT.zip | xargs -n1 basename
 		echo "$(tput setaf 6)This zip file to be compiled already exists! To cancel this process press CRTL+C and rename existing hex file.$(tput sgr 0)"
 		read -t 10 -p "Press Enter to continue..."
 	fi
-	
+
 	#List some useful data
 	echo "$(tput setaf 2)$(tput setab 7) "
 	echo "Variant    :" $VARIANT
@@ -585,23 +585,23 @@ do
 		echo "English only language firmware will be built"
 		echo " "
 	fi
-		
+
 	#Check if compiler flags are set to Prusa specific needs for the rambo board.
 #	if [ $OSTYPE == "msys" ]; then
 #		RAMBO_PLATFORM_FILE="PrusaResearchRambo/avr/platform.txt"
-#	fi	
-	
+#	fi
+
 	#### End of Prepare building
-		
+
 	#### Start building
-		
+
 	export ARDUINO=$BUILD_ENV_PATH
 	#echo $BUILD_ENV_PATH
 	#export BUILDER=$ARDUINO/arduino-builder
 
 	echo
 	#read -t 5 -p "Press Enter..."
-	echo 
+	echo
 
 	echo "Start to build Prusa Firmware ..."
 	echo "Using variant $VARIANT$(tput setaf 3)"
@@ -640,7 +640,7 @@ do
 		# build languages
 		echo "$(tput setaf 3)"
 		./lang-build.sh || exit 32
-		# Combine compiled firmware with languages 
+		# Combine compiled firmware with languages
 		./fw-build.sh || exit 33
 		echo "$(tput sgr 0)"
 		# Check if the motherboard is an EINSY and if so only one hex file will generated
@@ -648,20 +648,20 @@ do
 		# If the motherboard is an EINSY just copy one hexfile
 		if [ "$MOTHERBOARD" = "BOARD_EINSY_1_0a" ]; then
 			echo "$(tput setaf 2)Copying multi language firmware for MK3/Einsy board to Hex-files folder$(tput sgr 0)"
-			cp -f firmware.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.hex
+			cp -f firmware.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT.hex
 		else
 			echo "$(tput setaf 2)Zip multi language firmware for MK2.5/miniRAMbo board to Hex-files folder$(tput sgr 0)"
-			cp -f firmware_cz.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-cz.hex
-			cp -f firmware_de.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-de.hex
-			cp -f firmware_es.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-es.hex
-			cp -f firmware_fr.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-fr.hex
-			cp -f firmware_it.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-it.hex
-			cp -f firmware_pl.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-pl.hex
-			if [ $OSTYPE == "msys" ]; then 
-				zip a $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.zip $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-??.hex
-				rm $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-??.hex
+			cp -f firmware_cz.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-cz.hex
+			cp -f firmware_de.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-de.hex
+			cp -f firmware_es.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-es.hex
+			cp -f firmware_fr.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-fr.hex
+			cp -f firmware_it.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-it.hex
+			cp -f firmware_pl.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-pl.hex
+			if [ $OSTYPE == "msys" ]; then
+				zip a $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT.zip $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-??.hex
+				rm $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-??.hex
 			elif [ $OSTYPE == "linux-gnu" ]; then
-				zip -m -j ../../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT.zip ../../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-??.hex
+				zip -m -j ../../$OUTPUT_FOLDER/FW$FW-$VARIANT.zip ../../$OUTPUT_FOLDER/FW$FW-$VARIANT-??.hex
 			fi
 		fi
 		# Cleanup after build
@@ -671,7 +671,7 @@ do
 		echo "$(tput sgr 0)"
 	else
 		echo "$(tput setaf 2)Copying English only firmware to Hex-files folder$(tput sgr 0)"
-		cp -f $BUILD_PATH/Firmware.ino.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-Build$BUILD-$VARIANT-EN_ONLY.hex || exit 34
+		cp -f $BUILD_PATH/Firmware.ino.hex $SCRIPT_PATH/../$OUTPUT_FOLDER/FW$FW-$VARIANT-EN_ONLY.hex || exit 34
 	fi
 
 	# Cleanup Firmware
