@@ -3816,9 +3816,13 @@ eeprom_update_word((uint16_t*)EEPROM_NOZZLE_DIAMETER_uM,0xFFFF);
 	  // }
 
   }
-  else if (code_seen('^')) {
-    // nothing, this is a version line
-  } else if(code_seen('G'))
+  // This prevents reading files with "^" in their names.
+  // Since it is unclear, if there is some usage of this construct,
+  // it will be deprecated in 3.9 alpha a possibly completely removed in the future:
+  // else if (code_seen('^')) {
+  //  // nothing, this is a version line
+  // }
+  else if(code_seen('G'))
   {
 	gcode_in_progress = (int)code_value();
 //	printf_P(_N("BEGIN G-CODE=%u\n"), gcode_in_progress);
@@ -5321,7 +5325,7 @@ if(eSoundMode!=e_SOUND_MODE_SILENT)
     // -----------------------------------
     case 23:
       starpos = (strchr(strchr_pointer + 4,'*'));
-      if(starpos!=NULL)
+	  if(starpos!=NULL)
         *(starpos)='\0';
       card.openFile(strchr_pointer + 4,true);
       break;
@@ -5341,11 +5345,18 @@ if(eSoundMode!=e_SOUND_MODE_SILENT)
       card.pauseSDPrint();
       break;
 
-    //! ### M26 - Set SD index
+    //! ### M26 S\<index\> - Set SD index
+    //! Set position in SD card file to index in bytes.
+    //! This command is expected to be called after M23 and before M24.
+    //! Otherwise effect of this command is undefined.
     // ----------------------------------
     case 26:
       if(card.cardOK && code_seen('S')) {
-        card.setIndex(code_value_long());
+        long index = code_value_long();
+        card.setIndex(index);
+        // We don't disable interrupt during update of sdpos_atomic
+        // as we expect, that SD card print is not active in this moment
+        sdpos_atomic = index;
       }
       break;
 
@@ -9499,7 +9510,7 @@ void serialecho_temperatures() {
 	SERIAL_PROTOCOL_F(degBed(), 1);
 	SERIAL_PROTOCOLLN("");
 }
-extern uint32_t sdpos_atomic;
+
 #ifdef UVLO_SUPPORT
 
 void uvlo_()
