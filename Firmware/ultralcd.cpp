@@ -1100,6 +1100,7 @@ void lcd_commands()
 			lcd_setstatuspgm(_i("Print paused"));////MSG_PRINT_PAUSED c=20 r=1
             lcd_commands_type = LcdCommands::Idle;
             lcd_commands_step = 0;
+            long_pause();
 		}
 	}
 
@@ -1656,9 +1657,8 @@ void lcd_return_to_status()
 //! @brief Pause print, disable nozzle heater, move to park position
 void lcd_pause_print()
 {
-    lcd_return_to_status();
     stop_and_save_print_to_ram(0.0,0.0);
-    long_pause();
+    lcd_return_to_status();
     isPrintPaused = true;
     if (LcdCommands::Idle == lcd_commands_type)
     {
@@ -2282,6 +2282,9 @@ static void lcd_support_menu()
 void lcd_set_fan_check() {
 	fans_check_enabled = !fans_check_enabled;
 	eeprom_update_byte((unsigned char *)EEPROM_FAN_CHECK_ENABLED, fans_check_enabled);
+#ifdef FANCHECK
+	if (fans_check_enabled == false) fan_check_error = EFCE_OK; //reset error if fanCheck is disabled during error. Allows resuming print.
+#endif //FANCHECK
 }
 
 #ifdef MMU_HAS_CUTTER
@@ -6702,6 +6705,7 @@ static void lcd_test_menu()
 static bool fan_error_selftest()
 {
 #ifdef FANCHECK
+    if (!fans_check_enabled) return 0;
 
     fanSpeed = 255;
 #ifdef FAN_SOFT_PWM
@@ -6732,9 +6736,8 @@ static bool fan_error_selftest()
         return 1;
     }
 #endif
+#endif //FANCHECK
     return 0;
-
-#endif //FANCHECK   
 }
 
 //! @brief Resume paused print
