@@ -3293,37 +3293,24 @@ void gcode_M701()
  */
 static void gcode_PRUSA_SN()
 {
-    if (farm_mode) {
-        selectedSerialPort = 0;
-        putchar(';');
-        putchar('S');
-        int numbersRead = 0;
-        ShortTimer timeout;
-        timeout.start();
+    uint8_t selectedSerialPort_bak = selectedSerialPort;
+    char SN[20];
+    selectedSerialPort = 0;
+    SERIAL_ECHOLNRPGM(PSTR(";S"));
+    uint8_t numbersRead = 0;
+    ShortTimer timeout;
+    timeout.start();
 
-        while (numbersRead < 19) {
-            while (MSerial.available() > 0) {
-                uint8_t serial_char = MSerial.read();
-                selectedSerialPort = 1;
-                putchar(serial_char);
-                numbersRead++;
-                selectedSerialPort = 0;
-            }
-            if (timeout.expired(100u)) break;
+    while (numbersRead < (sizeof(SN) - 1)) {
+        if (MSerial.available() > 0) {
+            SN[numbersRead] = MSerial.read();
+            numbersRead++;
         }
-        selectedSerialPort = 1;
-        putchar('\n');
-#if 0
-        for (int b = 0; b < 3; b++) {
-            _tone(BEEPER, 110);
-            _delay(50);
-            _noTone(BEEPER);
-            _delay(50);
-        }
-#endif
-    } else {
-        puts_P(_N("Not in farm mode."));
+        if (timeout.expired(100u)) break;
     }
+    SN[numbersRead] = 0;
+    selectedSerialPort = selectedSerialPort_bak;
+    SERIAL_ECHOLN(SN);
 }
 //! Detection of faulty RAMBo 1.1b boards equipped with bigger capacitors
 //! at the TACH_1 pin, which causes bad detection of print fan speed.
@@ -4286,6 +4273,14 @@ if(eSoundMode!=e_SOUND_MODE_SILENT)
        #endif 
       break;
       #endif //FWRETRACT
+    
+
+    /*!
+	### G21 - Sets Units to Millimters <a href="https://reprap.org/wiki/G-code#G21:_Set_Units_to_Millimeters">G21: Set Units to Millimeters</a>
+	Units are in millimeters. Prusa doesn't support inches.
+    */
+    case 21: 
+      break; //Doing nothing. This is just to prevent serial UNKOWN warnings.
     
 
     /*!
@@ -7305,17 +7300,26 @@ Sigma_Exit:
     */
     case 220: // M220 S<factor in percent>- set speed factor override percentage
     {
-      if (code_seen('B')) //backup current speed factor
-      {
-        saved_feedmultiply_mm = feedmultiply;
-      }
-      if(code_seen('S'))
-      {		
-        feedmultiply = code_value() ;
-      }
-      if (code_seen('R')) { //restore previous feedmultiply
-        feedmultiply = saved_feedmultiply_mm;
-      }
+        bool codesWereSeen = false;
+        if (code_seen('B')) //backup current speed factor
+        {
+            saved_feedmultiply_mm = feedmultiply;
+            codesWereSeen = true;
+        }
+        if (code_seen('S'))
+        {
+            feedmultiply = code_value();
+            codesWereSeen = true;
+        }
+        if (code_seen('R')) //restore previous feedmultiply
+        {
+            feedmultiply = saved_feedmultiply_mm;
+            codesWereSeen = true;
+        }
+        if (!codesWereSeen)
+        {
+            printf_P(PSTR("%i%%\n"), feedmultiply);
+        }
     }
     break;
 
@@ -7331,23 +7335,26 @@ Sigma_Exit:
     */
     case 221: // M221 S<factor in percent>- set extrude factor override percentage
     {
-      if(code_seen('S'))
-      {
-        int tmp_code = code_value();
-        if (code_seen('T'))
+        if (code_seen('S'))
         {
-          uint8_t extruder;
-          if(setTargetedHotend(221, extruder)){
-            break;
-          }
-          extruder_multiply[extruder] = tmp_code;
+            int tmp_code = code_value();
+            if (code_seen('T'))
+            {
+                uint8_t extruder;
+                if (setTargetedHotend(221, extruder))
+                    break;
+                extruder_multiply[extruder] = tmp_code;
+            }
+            else
+            {
+                extrudemultiply = tmp_code ;
+            }
         }
         else
         {
-          extrudemultiply = tmp_code ;
+            printf_P(PSTR("%i%%\n"), extrudemultiply);
         }
-      }
-      calculate_extruder_multipliers();
+        calculate_extruder_multipliers();
     }
     break;
 
