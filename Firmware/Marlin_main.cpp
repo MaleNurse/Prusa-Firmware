@@ -90,18 +90,13 @@
 #include "la10compat.h"
 #endif
 
-#ifdef SWSPI
-#include "swspi.h"
-#endif //SWSPI
-
 #include "spi.h"
-
-#ifdef SWI2C
-#include "swi2c.h"
-#endif //SWI2C
 
 #ifdef FILAMENT_SENSOR
 #include "fsensor.h"
+#ifdef IR_SENSOR
+#include "pat9125.h" // for pat9125_probe
+#endif
 #endif //FILAMENT_SENSOR
 
 #ifdef TMC2130
@@ -233,7 +228,7 @@ bool fan_state[2];
 int fan_edge_counter[2];
 int fan_speed[2];
 
-char dir_names[3][9];
+char dir_names[MAX_DIR_DEPTH][9];
 
 bool sortAlpha = false;
 
@@ -325,6 +320,8 @@ uint8_t print_percent_done_normal = PRINT_PERCENT_DONE_INIT;
 uint16_t print_time_remaining_normal = PRINT_TIME_REMAINING_INIT; //estimated remaining print time in minutes
 uint8_t print_percent_done_silent = PRINT_PERCENT_DONE_INIT;
 uint16_t print_time_remaining_silent = PRINT_TIME_REMAINING_INIT; //estimated remaining print time in minutes
+
+uint32_t IP_address = 0;
 
 //===========================================================================
 //=============================Private Variables=============================
@@ -457,6 +454,7 @@ static void gcode_M105(uint8_t extruder);
 static void temp_compensation_start();
 static void temp_compensation_apply();
 
+static bool get_PRUSA_SN(char* SN);
 
 uint16_t gcode_in_progress = 0;
 uint16_t mcode_in_progress = 0;
@@ -921,9 +919,7 @@ static void check_if_fw_is_on_right_printer(){
 #ifdef FILAMENT_SENSOR
   if((PRINTER_TYPE == PRINTER_MK3) || (PRINTER_TYPE == PRINTER_MK3S)){
     #ifdef IR_SENSOR
-    swi2c_init();
-    const uint8_t pat9125_detected = swi2c_readByte_A8(PAT9125_I2C_ADDR,0x00,NULL);
-      if (pat9125_detected){
+      if (pat9125_probe()){
         lcd_show_fullscreen_message_and_wait_P(_i("MK3S firmware detected on MK3 printer"));}////c=20 r=3
     #endif //IR_SENSOR
 
@@ -1060,6 +1056,8 @@ static void w25x20cl_err_msg()
 // are initialized by the main() routine provided by the Arduino framework.
 void setup()
 {
+	timer2_init(); // enables functional millis
+
 	mmu_init();
 
 	ultralcd_init();
@@ -1123,6 +1121,22 @@ void setup()
           if(!(eeprom_read_byte((uint8_t*)EEPROM_FAN_CHECK_ENABLED)))
                eeprom_update_byte((unsigned char *)EEPROM_FAN_CHECK_ENABLED,true);
 	}
+
+    //saved EEPROM SN is not valid. Try to retrieve it.
+    //SN is valid only if it is NULL terminated. Any other character means either uninitialized or corrupted
+    if (eeprom_read_byte((uint8_t*)EEPROM_PRUSA_SN + 19))
+    {
+        char SN[20];
+        if (get_PRUSA_SN(SN))
+        {
+            eeprom_update_block(SN, (uint8_t*)EEPROM_PRUSA_SN, 20);
+            puts_P(PSTR("SN updated"));
+        }
+        else
+            puts_P(PSTR("SN update failed"));
+    }
+
+
 #ifndef W25X20CL
 	SERIAL_PROTOCOLLNPGM("start");
 #else
@@ -3447,25 +3461,26 @@ void gcode_M701()
  *
  * Typical format of S/N is:CZPX0917X003XC13518
  *
- * Command operates only in farm mode, if not in farm mode, "Not in farm mode." is written to MYSERIAL.
- *
  * Send command ;S to serial port 0 to retrieve serial number stored in 32U2 processor,
- * reply is transmitted to serial port 1 character by character.
+ * reply is stored in *SN.
  * Operation takes typically 23 ms. If the retransmit is not finished until 100 ms,
- * it is interrupted, so less, or no characters are retransmitted, only newline character is send
- * in any case.
+ * it is interrupted, so less, or no characters are retransmitted, the function returns false
+ * The command will fail if the 32U2 processor is unpowered via USB since it is isolated from the rest of the electronics.
+ * In that case the value that is stored in the EEPROM should be used instead.
+ *
+ * @return 1 on success
+ * @return 0 on general failure
  */
-static void gcode_PRUSA_SN()
+static bool get_PRUSA_SN(char* SN)
 {
     uint8_t selectedSerialPort_bak = selectedSerialPort;
-    char SN[20];
     selectedSerialPort = 0;
     SERIAL_ECHOLNRPGM(PSTR(";S"));
     uint8_t numbersRead = 0;
     ShortTimer timeout;
     timeout.start();
 
-    while (numbersRead < (sizeof(SN) - 1)) {
+    while (numbersRead < 19) {
         if (MSerial.available() > 0) {
             SN[numbersRead] = MSerial.read();
             numbersRead++;
@@ -3474,7 +3489,7 @@ static void gcode_PRUSA_SN()
     }
     SN[numbersRead] = 0;
     selectedSerialPort = selectedSerialPort_bak;
-    SERIAL_ECHOLN(SN);
+    return (numbersRead == 19);
 }
 //! Detection of faulty RAMBo 1.1b boards equipped with bigger capacitors
 //! at the TACH_1 pin, which causes bad detection of print fan speed.
@@ -3719,6 +3734,7 @@ extern uint8_t st_backlash_y;
 //!@n M503 - print the current settings (from memory not from EEPROM)
 //!@n M509 - force language selection on next restart
 //!@n M540 - Use S[0|1] to enable or disable the stop SD card print on endstop hit (requires ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED)
+//!@n M552 - Set IP address
 //!@n M600 - Pause for filament change X[pos] Y[pos] Z[relative lift] E[initial retract] L[later retract distance for removal]
 //!@n M605 - Set dual x-carriage movement mode: S<mode> [ X<duplication x-offset> R<duplication temp offset> ]
 //!@n M860 - Wait for PINDA thermistor to reach target temperature.
@@ -4006,7 +4022,12 @@ void process_commands()
         card.openFile(strchr_pointer+4,false);
 
 	} else if (code_seen_P(PSTR("SN"))) { // PRUSA SN
-        gcode_PRUSA_SN();
+        char SN[20];
+        eeprom_read_block(SN, (uint8_t*)EEPROM_PRUSA_SN, 20);
+        if (SN[19])
+            puts_P(PSTR("SN invalid"));
+        else
+            puts(SN);
 
 	} else if(code_seen_P(PSTR("Fir"))){ // PRUSA Fir
 
@@ -5816,9 +5837,15 @@ if(eSoundMode!=e_SOUND_MODE_SILENT)
 
     /*!
 	### M27 - Get SD status <a href="https://reprap.org/wiki/G-code#M27:_Report_SD_print_status">M27: Report SD print status</a>
+    #### Usage
+	
+	      M27 [ P ]
+	
+	#### Parameters
+	  - `P` - Show full SFN path instead of LFN only.
     */
     case 27:
-      card.getStatus();
+      card.getStatus(code_seen('P'));
       break;
 
     /*!
@@ -7980,6 +8007,36 @@ Sigma_Exit:
     }
     #endif // CUSTOM_M_CODE_SET_Z_PROBE_OFFSET
 
+	/*!
+	### M552 - Set IP address <a href="https://reprap.org/wiki/G-code#M552:_Set_IP_address.2C_enable.2Fdisable_network_interface">M552: Set IP address, enable/disable network interface"</a>
+    Sets the printer IP address that is shown in the support menu. Designed to be used with the help of host software.
+    If P is not specified nothing happens.
+    If the structure of the IP address is invalid, 0.0.0.0 is assumed and nothing is shown on the screen in the Support menu.
+    #### Usage
+    
+        M552 [ P<IP_address> ]
+    
+    #### Parameters
+    - `P` - The IP address in xxx.xxx.xxx.xxx format. Eg: P192.168.1.14
+	*/
+    case 552:
+    {
+        if (code_seen('P'))
+        {
+            uint8_t valCnt = 0;
+            IP_address = 0;
+            do
+            {
+                *strchr_pointer = '*';
+                ((uint8_t*)&IP_address)[valCnt] = code_value_short();
+                valCnt++;
+            } while ((valCnt < 4) && code_seen('.'));
+            
+            if (valCnt != 4)
+                IP_address = 0;
+        }
+    } break;
+
     #ifdef FILAMENTCHANGEENABLE
 
     /*!
@@ -10026,16 +10083,16 @@ bool setTargetedHotend(int code, uint8_t &extruder)
           SERIAL_ECHORPGM(_n("M104 Invalid extruder "));////MSG_M104_INVALID_EXTRUDER
           break;
         case 105:
-          SERIAL_ECHO(_n("M105 Invalid extruder "));////MSG_M105_INVALID_EXTRUDER
+          SERIAL_ECHORPGM(_n("M105 Invalid extruder "));////MSG_M105_INVALID_EXTRUDER
           break;
         case 109:
-          SERIAL_ECHO(_n("M109 Invalid extruder "));////MSG_M109_INVALID_EXTRUDER
+          SERIAL_ECHORPGM(_n("M109 Invalid extruder "));////MSG_M109_INVALID_EXTRUDER
           break;
         case 218:
-          SERIAL_ECHO(_n("M218 Invalid extruder "));////MSG_M218_INVALID_EXTRUDER
+          SERIAL_ECHORPGM(_n("M218 Invalid extruder "));////MSG_M218_INVALID_EXTRUDER
           break;
         case 221:
-          SERIAL_ECHO(_n("M221 Invalid extruder "));////MSG_M221_INVALID_EXTRUDER
+          SERIAL_ECHORPGM(_n("M221 Invalid extruder "));////MSG_M221_INVALID_EXTRUDER
           break;
       }
       SERIAL_PROTOCOLLN((int)extruder);
