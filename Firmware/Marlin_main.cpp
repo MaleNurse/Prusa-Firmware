@@ -228,10 +228,6 @@ bool fan_state[2];
 int fan_edge_counter[2];
 int fan_speed[2];
 
-char dir_names[MAX_DIR_DEPTH][9];
-
-bool sortAlpha = false;
-
 
 float extruder_multiplier[EXTRUDERS] = {1.0
   #if EXTRUDERS > 1
@@ -6992,14 +6988,14 @@ Sigma_Exit:
 	### M120 - Enable endstops <a href="https://reprap.org/wiki/G-code#M120:_Enable_endstop_detection">M120: Enable endstop detection</a>
     */
     case 120:
-      enable_endstops(false) ;
+      enable_endstops(true) ;
       break;
 
     /*!
 	### M121 - Disable endstops <a href="https://reprap.org/wiki/G-code#M121:_Disable_endstop_detection">M121: Disable endstop detection</a>
     */
     case 121:
-      enable_endstops(true) ;
+      enable_endstops(false) ;
       break;
 
     /*!
@@ -11281,8 +11277,8 @@ void restore_print_from_eeprom(bool mbl_was_active) {
 		}
 		dir_name[8] = '\0';
 		MYSERIAL.println(dir_name);
-		strcpy(dir_names[i], dir_name);
-		card.chdir(dir_name);
+		// strcpy(dir_names[i], dir_name);
+		card.chdir(dir_name, false);
 	}
 
 	for (int i = 0; i < 8; i++) {
@@ -11786,7 +11782,7 @@ void M600_wait_for_user(float HotendTempBckp) {
 				delay_keep_alive(4);
 
 				if (_millis() > waiting_start_time + (unsigned long)M600_TIMEOUT * 1000) {
-					lcd_display_message_fullscreen_P(_i("Press knob to preheat nozzle and continue."));////MSG_PRESS_TO_PREHEAT c=20 r=4
+					lcd_display_message_fullscreen_P(_i("Press the knob to preheat nozzle and continue."));////MSG_PRESS_TO_PREHEAT c=20 r=4
 					wait_for_user_state = 1;
 					setAllTargetHotends(0);
 					st_synchronize();
