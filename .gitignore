@@ -55,3 +55,6 @@ Firmware/Doc
 /Firmware/variants/printers.h
 Configuration.tmp
 config.tmp
+Firmware/variants/.DS_Store
+Firmware/.DS_Store
+.DS_Store
