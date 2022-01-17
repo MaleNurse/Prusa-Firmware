@@ -58,7 +58,7 @@
 //#define LANG_MODE              0 // primary language only
 #define LANG_MODE              0 // sec. language support
 
-#define LANG_SIZE_RESERVED     0x3000 // reserved space for secondary language (12288 bytes)
+#define LANG_SIZE_RESERVED     0x3000 // reserved space for secondary language (12288 bytes). Maximum 32768 bytes
 
 //Community language support
 #define COMMUNITY_LANG_GROUP 1
@@ -72,6 +72,7 @@
 #define COMMUNITY_LANG_GROUP1_LB // Community Luxembourgish language
 #define COMMUNITY_LANG_GROUP1_HR // Community Croatian language
 #define COMMUNITY_LANG_GROUP1_LT // Community Lithuanian language
+#define COMMUNITY_LANG_GROUP1_RO // Community Romanian language
 //#define COMMUNITY_LANG_GROUP1_QR // Community new language //..use this as a template and replace 'QR'
 #endif
 

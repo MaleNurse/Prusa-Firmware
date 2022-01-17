@@ -1,50 +1,50 @@
 #MSG_IR_03_OR_OLDER c=18
 " 0.3 or older"
-"\x00"
+" 0.3 / mai vechi"
 
 #MSG_FS_V_03_OR_OLDER c=18
 "FS v0.3 or older"
-"\x00"
+"FS 0.3 / mai vechi"
 
 #MSG_IR_04_OR_NEWER c=18
 " 0.4 or newer"
-"\x00"
+" 0.4 / mai nou"
 
 #MSG_FS_V_04_OR_NEWER c=18
 "FS v0.4 or newer"
-"\x00"
+"FS 0.4 / mai nou"
 
 #MSG_IR_UNKNOWN c=18
 "unknown state"
-"\x00"
+"vers. necunoscuta"
 
 #MSG_MEASURED_OFFSET c=20
 "[0;0] point offset"
-"\x00"
+"compensare origine"
 
 #MSG_CRASH_DET_ONLY_IN_NORMAL c=20 r=4
 "Crash detection can\x0abe turned on only in\x0aNormal mode"
-"\x00"
+"Detect. coliziunilor\x0apoate fi pornita\x0adoar in modul normal"
 
 #MSG_CRASH_DET_STEALTH_FORCE_OFF c=20 r=4
 "WARNING:\x0aCrash detection\x0adisabled in\x0aStealth mode"
-"\x00"
+"ATENTIE:\x0aDetect. coliziunilor\x0aeste oprita in\x0amodul silentios"
 
 #MSG_BABYSTEPPING_Z c=15
 "Adjusting Z:"
-"\x00"
+"Ajustare Z:"
 
 #MSG_SELFTEST_CHECK_ALLCORRECT c=20
 "All correct"
-"\x00"
+"Totul OK"
 
 #MSG_WIZARD_DONE c=20 r=8
 "All is done. Happy printing!"
-"\x00"
+"Totul este OK. Distractie placuta!"
 
 #MSG_AMBIENT c=14
 "Ambient"
-"\x00"
+"Ambiental"
 
 #MSG_AUTO c=6
 "Auto"
@@ -52,11 +52,11 @@
 
 #MSG_PRESS c=20 r=2
 "and press the knob"
-"\x00"
+"si apasa butonul"
 
 #MSG_CONFIRM_CARRIAGE_AT_THE_TOP c=20 r=2
 "Are left and right Z~carriages all up?"
-"\x00"
+"Este axa Z aliniata sus?"
 
 #MSG_AUTO_HOME c=18
 "Auto home"
@@ -68,163 +68,163 @@
 
 #MSG_AUTOLOADING_ONLY_IF_FSENS_ON c=20 r=4
 "Autoloading filament available only when filament sensor is turned on..."
-"\x00"
+"Incarcarea automata de fil. e valabila doar cand senzorul este pornit..."
 
 #MSG_AUTOLOADING_ENABLED c=20 r=4
 "Autoloading filament is active, just press the knob and insert filament..."
-"\x00"
+"Incarcarea automata de filament pornita; apasati butonul si incarcati filamentul"
 
 #MSG_SELFTEST_AXIS_LENGTH c=20
 "Axis length"
-"\x00"
+"Lungime axa"
 
 #MSG_SELFTEST_AXIS c=16
 "Axis"
-"\x00"
+"Axa"
 
 #MSG_SELFTEST_BEDHEATER c=20
 "Bed/Heater"
-"\x00"
+"Incalzitor/Pat"
 
 #MSG_BED_DONE c=20
 "Bed done"
-"\x00"
+"Pat incalzit"
 
 #MSG_BED_HEATING c=20
 "Bed Heating"
-"\x00"
+"Patul se incalzeste"
 
 #MSG_BED_CORRECTION_MENU c=18
 "Bed level correct"
-"\x00"
+"Nivelare pat"
 
 #MSG_BELTTEST c=18
 "Belt test"
-"\x00"
+"Test curele"
 
 #MSG_BED_LEVELING_FAILED_POINT_LOW c=20 r=6
 "Bed leveling failed. Sensor didn't trigger. Debris on nozzle? Waiting for reset."
-"\x00"
+"Nivelarea patului a esuat. Senzorul nu a detectat. Mizerie pe varf? Apasati reset."
 
 #MSG_BRIGHT c=6
 "Bright"
-"\x00"
+"Maxim"
 
 #MSG_BRIGHTNESS c=18
 "Brightness"
-"\x00"
+"Luminozitate ecran"
 
 #MSG_BED c=13
 "Bed"
-"\x00"
+"Pat"
 
 #MSG_BELT_STATUS c=18
 "Belt status"
-"\x00"
+"Status curele"
 
 #MSG_RECOVER_PRINT c=20 r=2
 "Blackout occurred. Recover print?"
-"\x00"
+"Pana de curent. Continuati printul?"
 
 #MSG_CALIBRATING_HOME c=20
 "Calibrating home"
-"\x00"
+"Calibrare home"
 
 #MSG_CALIBRATE_BED c=18
 "Calibrate XYZ"
-"\x00"
+"Calibrare XYZ"
 
 #MSG_HOMEYZ c=18
 "Calibrate Z"
-"\x00"
+"Calibrare Z"
 
 #MSG_CALIBRATE_PINDA c=17
 "Calibrate"
-"\x00"
+"Calibrare"
 
 #MSG_CANCEL2 c=10
 ">Cancel"
-"\x00"
+">Anuleaza"
 
 #MSG_MOVE_CARRIAGE_TO_THE_TOP c=20 r=8
 "Calibrating XYZ. Rotate the knob to move the Z carriage up to the end stoppers. Click when done."
-"\x00"
+"Calibrare XYZ. Rotiti butonul pentru a ridica axa Z pana la capat. Apasati butonul cand este gata."
 
 #MSG_CALIBRATE_Z_AUTO c=20 r=2
 "Calibrating Z"
-"\x00"
+"Calibrare Z"
 
 #MSG_MOVE_CARRIAGE_TO_THE_TOP_Z c=20 r=8
 "Calibrating Z. Rotate the knob to move the Z carriage up to the end stoppers. Click when done."
-"\x00"
+"Calibrare Z. Rotiti butonul pentru a ridica axa Z pana la capat. Apasati butonul cand este gata."
 
 #MSG_HOMEYZ_DONE c=20
 "Calibration done"
-"\x00"
+"Calibrare gata"
 
 #MSG_MENU_CALIBRATION c=18
 "Calibration"
-"\x00"
+"Calibrare"
 
 #MSG_SD_REMOVED c=20
 "Card removed"
-"\x00"
+"Card scos"
 
 #MSG_CHECKING_FILE c=17
 "Checking file"
-"\x00"
+"Verif. fisier"
 
 #MSG_NOT_COLOR c=19
 "Color not correct"
-"\x00"
+"Culoare gresita"
 
 #MSG_COOLDOWN c=18
 "Cooldown"
-"\x00"
+"Racire"
 
 #MSG_COPY_SEL_LANG c=20 r=3
 "Copy selected language?"
-"\x00"
+"Copiaza limba selectata?"
 
 #MSG_CRASHDETECT c=13
 "Crash det."
-"\x00"
+"Det.coliziune"
 
 #MSG_CHOOSE_FIL_1ST_LAYERCAL c=20 r=7
 "Choose a filament for the First Layer Calibration and select it in the on-screen menu."
-"\x00"
+"Alegeti un filament pentru First Layer Calibration si selectati-l de pe ecran."
 
 #MSG_CRASH_DETECTED c=20
 "Crash detected."
-"\x00"
+"Coliziune detectata."
 
 #MSG_CRASH_RESUME c=20 r=3
 "Crash detected. Resume print?"
-"\x00"
+"Coliziune detectata. Continuati printul?"
 
 #MSG_CRASH c=7
 "Crash"
-"\x00"
+"Coliz."
 
 #MSG_CURRENT c=19
 "Current"
-"\x00"
+"Actual"
 
 #MSG_DATE c=17
 "Date:"
-"\x00"
+"Data:"
 
 #MSG_COMMUNITY_MADE c=18
 "Community made"
-"\x00"
+"Comunitate"
 
 #MSG_DISABLE_STEPPERS c=18
 "Disable steppers"
-"\x00"
+"Oprire steppere"
 
 #MSG_BABYSTEP_Z_NOT_SET c=20 r=12
 "Distance between tip of the nozzle and the bed surface has not been set yet. Please follow the manual, chapter First steps, section First layer calibration."
-"\x00"
+"Distanta dintre varf si pat nu a fost setata. Urmariti instructiunile din manual, capitolul First steps, sectiunea First layer calibration."
 
 #MSG_FS_CONTINUE c=5
 "Cont."
@@ -232,7 +232,7 @@
 
 #MSG_WIZARD_REPEAT_V2_CAL c=20 r=7
 "Do you want to repeat last step to readjust distance between nozzle and heatbed?"
-"\x00"
+"Vreti sa repetati ultimul pas pentru a reajusta distanta dintre varf si suprafata de print?"
 
 #MSG_EXTRUDER_CORRECTION c=13
 "E-correct:"
@@ -240,15 +240,15 @@
 
 #MSG_EJECT_FILAMENT c=16
 "Eject filament"
-"\x00"
+"Scoate filament"
 
 #MSG_EJECTING_FILAMENT c=20
 "Ejecting filament"
-"\x00"
+"Se scoate filamentul"
 
 #MSG_SELFTEST_ENDSTOP_NOTHIT c=20
 "Endstop not hit"
-"\x00"
+"Endstop neatins"
 
 #MSG_SELFTEST_ENDSTOP c=16
 "Endstop"
@@ -256,15 +256,15 @@
 
 #MSG_SELFTEST_ENDSTOPS c=20
 "Endstops"
-"\x00"
+"Endstop-uri"
 
 #MSG_STACK_ERROR c=20 r=4
 "Error - static memory has been overwritten"
-"\x00"
+"Eroare - memoria statica a fost suprascrisa"
 
 #MSG_CUT_FILAMENT c=16
 "Cut filament"
-"\x00"
+"Taie filamentul"
 
 #MSG_CUTTER c=9
 "Cutter"
@@ -272,27 +272,27 @@
 
 #MSG_MMU_CUTTING_FIL c=18
 "Cutting filament"
-"\x00"
+"Filamentul se taie"
 
 #MSG_FSENS_NOT_RESPONDING c=20 r=4
 "ERROR: Filament sensor is not responding, please check connection."
-"\x00"
+"EROARE: Senzorul de filament nu merge, verificati conexiunea."
 
 #MSG_DIM c=6
 "Dim"
-"\x00"
+"Minim"
 
 #MSG_ERROR c=10
 "ERROR:"
-"\x00"
+"EROARE:"
 
 #MSG_SELFTEST_EXTRUDER_FAN_SPEED c=18
 "Extruder fan:"
-"\x00"
+"Vent. extruder:"
 
 #MSG_INFO_EXTRUDER c=18
 "Extruder info"
-"\x00"
+"Info. extruder"
 
 #MSG_EXTRUDER c=17
 "Extruder"
@@ -300,79 +300,79 @@
 
 #MSG_MMU_FAIL_STATS c=18
 "Fail stats MMU"
-"\x00"
+"Stat. erori MMU"
 
 #MSG_FSENSOR_AUTOLOAD c=13
 "F. autoload"
-"\x00"
+"Autoload fil."
 
 #MSG_FAIL_STATS c=18
 "Fail stats"
-"\x00"
+"Statistici erori"
 
 #MSG_FAN_SPEED c=14
 "Fan speed"
-"\x00"
+"Viteza vent."
 
 #MSG_SELFTEST_FAN c=20
 "Fan test"
-"\x00"
+"Test ventilator"
 
 #MSG_FANS_CHECK c=13
 "Fans check"
-"\x00"
+"Verif. vent."
 
 #MSG_FSENSOR c=12
 "Fil. sensor"
-"\x00"
+"Senzor fil."
 
 #MSG_FIL_RUNOUTS c=15
 "Fil. runouts"
-"\x00"
+"Epuizari fil."
 
 #MSG_FILAMENT_CLEAN c=20 r=2
 "Filament extruding & with correct color?"
-"\x00"
+"Fil. curge si are culoarea corecta?"
 
 #MSG_NOT_LOADED c=19
 "Filament not loaded"
-"\x00"
+"Fil. nu e incarcat"
 
 #MSG_SELFTEST_FILAMENT_SENSOR c=17
 "Filament sensor"
-"\x00"
+"Senz. de filament"
 
 #MSG_FILAMENT_USED c=19
 "Filament used"
-"\x00"
+"Filament folosit"
 
 #MSG_PRINT_TIME c=19
 "Print time"
-"\x00"
+"Durata print"
 
 #MSG_FS_ACTION c=10
 "FS Action"
-"\x00"
+"Actiune FS"
 
 #MSG_FILE_INCOMPLETE c=20 r=3
 "File incomplete. Continue anyway?"
-"\x00"
+"Fisier incomplet. Continua oricum?"
 
 #MSG_FINISHING_MOVEMENTS c=20
 "Finishing movements"
-"\x00"
+"Finalizare miscari"
 
 #MSG_V2_CALIBRATION c=18
 "First layer cal."
-"\x00"
+"Cal. first layer"
 
 #MSG_WIZARD_SELFTEST c=20 r=8
 "First, I will run the selftest to check most common assembly problems."
-"\x00"
+"Mai intai, voi rula testele automate pentru a verifica cele mai intalnite probleme de asamblare."
 
 #MSG_MMU_FIX_ISSUE c=20 r=4
 "Fix the issue and then press button on MMU unit."
-"\x00"
+"Rezolvati problema si apasati butonul pe unitatea MMU."
 
 #MSG_FLOW c=15
 "Flow"
@@ -380,83 +380,83 @@
 
 #MSG_SELFTEST_COOLING_FAN c=20
 "Front print fan?"
-"\x00"
+"Vent. print?"
 
 #MSG_BED_CORRECTION_FRONT c=14
 "Front side[um]"
-"\x00"
+"Fata [um]"
 
 #MSG_SELFTEST_FANS c=20
 "Front/left fans"
-"\x00"
+"Ventilatoarele sunt"
 
 #MSG_SELFTEST_HEATERTHERMISTOR c=20
 "Heater/Thermistor"
-"\x00"
+"Incalzitor/Termistor"
 
 #MSG_BED_HEATING_SAFETY_DISABLED c=20 r=4
 "Heating disabled by safety timer."
-"\x00"
+"Incalzirea dezactivata de timer-ul de siguranta"
 
 #MSG_HEATING_COMPLETE c=20
 "Heating done."
-"\x00"
+"Incalzirea gata."
 
 #MSG_HEATING c=20
 "Heating"
-"\x00"
+"Incalzire"
 
 #MSG_WIZARD_WELCOME c=20 r=7
 "Hi, I am your Original Prusa i3 printer. Would you like me to guide you through the setup process?"
-"Hej, jag ar din ursprungliga Prusa i3 -skrivare. Vill du att jag ska vagleda dig genom installationsprocessen?"
+"Salut, sunt imprimanta ta Original Prusa i3. Vrei sa initiez testele automate si calibrarile?"
 
 #MSG_FILAMENTCHANGE c=18
 "Change filament"
-"\x00"
+"Schimba filamentul"
 
 #MSG_CHANGE_SUCCESS c=20
 "Change success!"
-"\x00"
+"Schimbare cu succes!"
 
 #MSG_CORRECTLY c=20
 "Changed correctly?"
-"\x00"
+"Schimbat corect?"
 
 #MSG_SELFTEST_CHECK_BED c=20
 "Checking bed"
-"\x00"
+"Verificare pat"
 
 #MSG_SELFTEST_CHECK_ENDSTOPS c=20
 "Checking endstops"
-"\x00"
+"Verif. endstop-uri"
 
 #MSG_SELFTEST_CHECK_HOTEND c=20
 "Checking hotend"
-"\x00"
+"Verificare hotend"
 
 #MSG_SELFTEST_CHECK_FSENSOR c=20
 "Checking sensors"
-"\x00"
+"Verificare senzori"
 
 #MSG_CHECKING_X c=20
 "Checking X axis"
-"\x00"
+"Verificare axa X"
 
 #MSG_CHECKING_Y c=20
 "Checking Y axis"
-"\x00"
+"Verificare axa Y"
 
 #MSG_SELFTEST_CHECK_Z c=20
 "Checking Z axis"
-"\x00"
+"Verificare axa Z"
 
 #MSG_CHOOSE_EXTRUDER c=20
 "Choose extruder:"
-"\x00"
+"Alege extruderul:"
 
 #MSG_CHOOSE_FILAMENT c=20
 "Choose filament:"
-"\x00"
+"Alege filamentul:"
 
 #MSG_FILAMENT c=17
 "Filament"
@@ -464,151 +464,151 @@
 
 #MSG_WIZARD_XYZ_CAL c=20 r=8
 "I will run xyz calibration now. It will take approx. 12 mins."
-"\x00"
+"Voi rula calibrarea XYZ acum. Va dura aprox. 12 minute."
 
 #MSG_WIZARD_Z_CAL c=20 r=8
 "I will run z calibration now."
-"\x00"
+"Voi rula calibrarea Z acum."
 
 #MSG_WATCH c=18
 "Info screen"
-"\x00"
+"Ecran informatii"
 
 #MSG_INSERT_FILAMENT c=20
 "Insert filament"
-"\x00"
+"Incarca filament"
 
 #MSG_FILAMENT_LOADED c=20 r=2
 "Is filament loaded?"
-"\x00"
+"Este filamentul incarcat?"
 
 #MSG_STEEL_SHEET_CHECK c=20 r=2
 "Is steel sheet on heatbed?"
-"\x00"
+"Este suprafata de print pe pat?"
 
 #MSG_LAST_PRINT_FAILURES c=20
 "Last print failures"
-"\x00"
+"Err. ultimului print"
 
 #MSG_WIZARD_WELCOME_SHIPPING c=20 r=16
 "Hi, I am your Original Prusa i3 printer. I will guide you through a short setup process, in which the Z-axis will be calibrated. Then, you will be ready to print."
-"\x00"
+"Salut, sunt imprimanta ta Original Prusa i3. Te voi ghida printr-un scurt proces de setup in care axa Z va fi calibrata. Apoi, vei fi gata sa printezi."
 
 #MSG_ADDITIONAL_SHEETS c=20 r=9
 "If you have additional steel sheets, calibrate their presets in Settings - HW Setup - Steel sheets."
-"\x00"
+"Daca ai suprafete de print suplimentare, calibreaza-le in Setari - Setup HW - Suprafete print."
 
 #MSG_LAST_PRINT c=18
 "Last print"
-"\x00"
+"Ultimul print"
 
 #MSG_SELFTEST_EXTRUDER_FAN c=20
 "Left hotend fan?"
-"\x00"
+"Vent. hotend?"
 
 #MSG_LEFT c=10
 "Left"
-"\x00"
+"Stanga"
 
 #MSG_BED_CORRECTION_LEFT c=14
 "Left side [um]"
-"\x00"
+"Stanga [um]"
 
 #MSG_LIN_CORRECTION c=18
 "Lin. correction"
-"\x00"
+"Corectie lin."
 
 #MSG_BABYSTEP_Z c=18
 "Live adjust Z"
-"\x00"
+"Reglare Z live"
 
 #MSG_INSERT_FIL c=20 r=6
 "Insert the filament (do not load it) into the extruder and then press the knob."
-"\x00"
+"Infige filamentul (nu-l incarca) in extruder si apasa butonul."
 
 #MSG_LOAD_FILAMENT c=17
 "Load filament"
-"\x00"
+"Incarca filament"
 
 #MSG_LOADING_COLOR c=20
 "Loading color"
-"\x00"
+"Incarcare culoare"
 
 #MSG_LOADING_FILAMENT c=20
 "Loading filament"
-"\x00"
+"Incarcare filament"
 
 #MSG_ITERATION c=12
 "Iteration"
-"\x00"
+"Iteratie"
 
 #MSG_LOOSE_PULLEY c=20
 "Loose pulley"
-"\x00"
+"Fulie slabita"
 
 #MSG_LOAD_TO_NOZZLE c=18
 "Load to nozzle"
-"\x00"
+"Incarca extruder"
 
 #MSG_M117_V2_CALIBRATION c=25
 "M117 First layer cal."
-"\x00"
+"M117 Cal. first layer"
 
 #MSG_MAIN c=18
 "Main"
-"\x00"
+"Meniu principal"
 
 #MSG_BL_HIGH c=12
 "Level Bright"
-"\x00"
+"Lum. maxim"
 
 #MSG_BL_LOW c=12
 "Level Dimmed"
-"\x00"
+"Lum. minim"
 
 #MSG_MEASURE_BED_REFERENCE_HEIGHT_LINE1 c=20 r=3
 "Measuring reference height of calibration point"
-"\x00"
+"Masurare distanta de referinta pentru punctul de calib."
 
 #MSG_MESH_BED_LEVELING c=18
 "Mesh Bed Leveling"
-"\x00"
+"Calibrare mesh"
 
 #MSG_MMU_OK_RESUMING_POSITION c=20 r=4
 "MMU OK. Resuming position..."
-"\x00"
+"MMU OK. Se reia pozitia..."
 
 #MSG_MMU_OK_RESUMING_TEMPERATURE c=20 r=4
 "MMU OK. Resuming temperature..."
-"\x00"
+"MMU OK. Restabilire temperatura..."
 
 #MSG_MEASURED_SKEW c=14
 "Measured skew"
-"\x00"
+"Distorsiune"
 
 #MSG_MMU_FAILS c=15
 "MMU fails"
-"\x00"
+"Erori MMU"
 
 #MSG_MMU_LOAD_FAILED c=20
 "MMU load failed"
-"\x00"
+"Eroare incarcare MMU"
 
 #MSG_MMU_LOAD_FAILS c=15
 "MMU load fails"
-"\x00"
+"Err. incarc MMU"
 
 #MSG_MMU_OK_RESUMING c=20 r=4
 "MMU OK. Resuming..."
-"\x00"
+"MMU OK. Reluare..."
 
 #MSG_MODE c=6
 "Mode"
-"\x00"
+"Mod"
 
 #MSG_MK3_FIRMWARE_ON_MK3S c=20 r=4
 "MK3 firmware detected on MK3S printer"
-"\x00"
+"Firmware MK3 detectat pe imprimanta MK3S"
 
 #MSG_NORMAL c=7
 "Normal"
@@ -616,31 +616,31 @@
 
 #MSG_SILENT c=7
 "Silent"
-"\x00"
+"Silent."
 
 #MSG_MMU_USER_ATTENTION c=20 r=3
 "MMU needs user attention."
-"\x00"
+"MMU necesita atentia utilizatorului."
 
 #MSG_MMU_POWER_FAILS c=15
 "MMU power fails"
-"\x00"
+"Err. MMU curent"
 
 #MSG_STEALTH c=7
 "Stealth"
-"\x00"
+"Silent."
 
 #MSG_AUTO_POWER c=10
 "Auto power"
-"\x00"
+"Put. auto"
 
 #MSG_HIGH_POWER c=10
 "High power"
-"\x00"
+"Put. max"
 
 #MSG_MMU_CONNECTED c=18
 "MMU2 connected"
-"\x00"
+"MMU2 conectat"
 
 #MSG_SELFTEST_MOTOR c=18
 "Motor"
@@ -648,27 +648,27 @@
 
 #MSG_MOVE_AXIS c=18
 "Move axis"
-"\x00"
+"Miscare axe"
 
 #MSG_MOVE_X c=18
 "Move X"
-"\x00"
+"Miscare X"
 
 #MSG_MOVE_Y c=18
 "Move Y"
-"\x00"
+"Miscare Y"
 
 #MSG_MOVE_Z c=18
 "Move Z"
-"\x00"
+"Miscare Z"
 
 #MSG_NO_MOVE c=20
 "No move."
-"\x00"
+"Fara miscare."
 
 #MSG_NO_CARD c=18
 "No SD card"
-"\x00"
+"Fara card SD"
 
 #MSG_NA c=3
 "N/A"
@@ -676,347 +676,347 @@
 
 #MSG_NO c=4
 "No"
-"\x00"
+"Nu"
 
 #MSG_SELFTEST_NOTCONNECTED c=20
 "Not connected"
-"\x00"
+"Nu este conectat"
 
 #MSG_NEW_FIRMWARE_AVAILABLE c=20 r=2
 "New firmware version available:"
-"\x00"
+"Vers. de firmware noua disponibila:"
 
 #MSG_SELFTEST_FAN_NO c=19
 "Not spinning"
-"\x00"
+"Nu se roteste"
 
 #MSG_WIZARD_V2_CAL c=20 r=8
 "Now I will calibrate distance between tip of the nozzle and heatbed surface."
-"\x00"
+"Acum voi calibra distanta dintre varf si suprafata patului."
 
 #MSG_WIZARD_WILL_PREHEAT c=20 r=4
 "Now I will preheat nozzle for PLA."
-"\x00"
+"Acum voi preincalzi extruder-ul pentru PLA."
 
 #MSG_NOZZLE c=12
 "Nozzle"
-"\x00"
+"Varf"
 
 #MSG_DEFAULT_SETTINGS_LOADED c=20 r=6
 "Old settings found. Default PID, Esteps etc. will be set."
-"\x00"
+"Setari vechi detectate. PID, Esteps etc. de baza vor fi setate."
 
 #MSG_REMOVE_TEST_PRINT c=20 r=4
 "Now remove the test print from steel sheet."
-"\x00"
+"Acum inlaturati printul de test de pe suprafata de print."
 
 #MSG_NOZZLE_FAN c=10
 "Nozzle FAN"
-"\x00"
+"Vent. varf"
 
 #MSG_PAUSE_PRINT c=18
 "Pause print"
-"\x00"
+"Pauza print"
 
 #MSG_PID_RUNNING c=20
 "PID cal."
-"\x00"
+"Calibrare PID"
 
 #MSG_PID_FINISHED c=20
 "PID cal. finished"
-"\x00"
+"Calibrare PID gata"
 
 #MSG_PID_EXTRUDER c=17
 "PID calibration"
-"\x00"
+"Calibrare PID"
 
 #MSG_PINDA_PREHEAT c=20
 "PINDA Heating"
-"\x00"
+"Incalzire PINDA"
 
 #MSG_PAPER c=20 r=10
 "Place a sheet of paper under the nozzle during the calibration of first 4 points. If the nozzle catches the paper, power off the printer immediately."
-"\x00"
+"Asezati o foaie de hartie sub varf in timpul calibrarii primelor 4 puncte. Daca varful prinde hartia, opriti imediat imprimanta."
 
 #MSG_WIZARD_CLEAN_HEATBED c=20 r=8
 "Please clean heatbed and then press the knob."
-"\x00"
+"Curatati patul si apoi apasati butonul pentru a continua."
 
 #MSG_CONFIRM_NOZZLE_CLEAN c=20 r=8
 "Please clean the nozzle for calibration. Click when done."
-"\x00"
+"Curatati varful pentru calibrare. Apasati butonul cand terminati."
 
 #MSG_SELFTEST_PLEASECHECK c=20
 "Please check:"
-"\x00"
+"Verificati:"
 
 #MSG_WIZARD_CALIBRATION_FAILED c=20 r=8
 "Please check our handbook and fix the problem. Then resume the Wizard by rebooting the printer."
-"\x00"
+"Va rugam verificati handbook-ul si rezolvati problema. Apoi reluati Wizard-ul repornind imprimanta."
 
 #MSG_CHECK_IDLER c=20 r=5
 "Please open idler and remove filament manually."
-"\x00"
+"Deschideti idler-ul si scoateti filamentul manual."
 
 #MSG_PLACE_STEEL_SHEET c=20 r=5
 "Please place steel sheet on heatbed."
-"\x00"
+"Asezati suprafata de print pe pat."
 
 #MSG_PRESS_TO_UNLOAD c=20 r=4
 "Please press the knob to unload filament"
-"\x00"
+"Apasati butonul pentru a scoate filamentul."
 
 #MSG_PULL_OUT_FILAMENT c=20 r=4
 "Please pull out filament immediately"
-"\x00"
+"Va rugam scoateti filamentul imediat"
 
 #MSG_EJECT_REMOVE c=20 r=4
 "Please remove filament and then press the knob."
-"\x00"
+"Va rugam scoateti filamentul, iar apoi apasati butonul."
 
 #MSG_REMOVE_STEEL_SHEET c=20 r=4
 "Please remove steel sheet from heatbed."
-"\x00"
+"Va rugam indepartati suprafata de print de pe pat."
 
 #MSG_RUN_XYZ c=20 r=4
 "Please run XYZ calibration first."
-"\x00"
+"Va rugam rulati calibrarea XYZ mai intai."
 
 #MSG_UPDATE_MMU2_FW c=20 r=4
 "Please update firmware in your MMU2. Waiting for reset."
-"\x00"
+"Va rugam actualizati firmware-ul MMU2. Se asteapta resetarea."
 
 #MSG_PLEASE_WAIT c=20
 "Please wait"
-"\x00"
+"Va rog asteptati"
 
 #MSG_REMOVE_SHIPPING_HELPERS c=20 r=3
 "Please remove shipping helpers first."
-"\x00"
+"Va rugam scoateti protectiile de transport mai intai."
 
 #MSG_PREHEAT_NOZZLE c=20
 "Preheat the nozzle!"
-"\x00"
+"Preincalziti varful!"
 
 #MSG_PREHEAT c=18
 "Preheat"
-"\x00"
+"Preincalzire"
 
 #MSG_WIZARD_HEATING c=20 r=3
 "Preheating nozzle. Please wait."
-"\x00"
+"Preincalzire extruder. Asteptati, va rugam."
 
 #MSG_NEW_FIRMWARE_PLEASE_UPGRADE c=20
 "Please upgrade."
-"\x00"
+"Va rugam actualizati"
 
 #MSG_PRESS_TO_PREHEAT c=20 r=4
 "Press the knob to preheat nozzle and continue."
-"\x00"
+"Apasati butonul pentru a preincalzi extruder-ul si continuati."
 
 #MSG_FS_PAUSE c=5
 "Pause"
-"\x00"
+"Pauza"
 
 #MSG_POWER_FAILURES c=15
 "Power failures"
-"\x00"
+"Err. alimentare"
 
 #MSG_PRINT_ABORTED c=20
 "Print aborted"
-"\x00"
+"Print anulat"
 
 #MSG_PREHEATING_TO_LOAD c=20
 "Preheating to load"
-"\x00"
+"Preincalzire load"
 
 #MSG_PREHEATING_TO_UNLOAD c=20
 "Preheating to unload"
-"\x00"
+"Preincalzire unload"
 
 #MSG_SELFTEST_PRINT_FAN_SPEED c=18
 "Print fan:"
-"\x00"
+"Ventilator print:"
 
 #MSG_CARD_MENU c=18
 "Print from SD"
-"\x00"
+"Printare de pe SD"
 
 #MSG_PRESS_KNOB c=20
 "Press the knob"
-"\x00"
+"Apasati butonul"
 
 #MSG_PRINT_PAUSED c=20
 "Print paused"
-"\x00"
+"Print oprit"
 
 #MSG_RESUME_NOZZLE_TEMP c=20 r=4
 "Press the knob to resume nozzle temperature."
-"\x00"
+"Apasati butonul pentru a restabili temperatura extruder-ului."
 
 #MSG_FOLLOW_CALIBRATION_FLOW c=20 r=8
 "Printer has not been calibrated yet. Please follow the manual, chapter First steps, section Calibration flow."
-"\x00"
+"Imprimanta nu a fost calibrata inca. Va rugam sa folositi manualul, capitolul First steps, sectiunea Calibration flow."
 
 #MSG_PRINT_FAN c=10
 "Print FAN"
-"\x00"
+"Vent.print"
 
 #MSG_WIZARD_LOAD_FILAMENT c=20 r=6
 "Please insert filament into the extruder, then press the knob to load it."
-"\x00"
+"Va rugam introduceti filamentul in extruder apoi apasati butonul pentru a-l incarca."
 
 #MSG_MMU_INSERT_FILAMENT_FIRST_TUBE c=20 r=6
 "Please insert filament into the first tube of the MMU, then press the knob to load it."
-"\x00"
+"Va rugam introduceti filamentul in primul tub al MMU apoi apsati butonul pentru a-l incarca."
 
 #MSG_PLEASE_LOAD_PLA c=20 r=4
 "Please load filament first."
-"\x00"
+"Va rugam incarcati filamentul mai intai."
 
 #MSG_BED_CORRECTION_REAR c=14
 "Rear side [um]"
-"\x00"
+"Spate [um]"
 
 #MSG_UNLOAD_FILAMENT_REPEAT c=20 r=4
 "Please unload the filament first, then repeat this action."
-"\x00"
+"Va rugam mai intai sa scoateti filamentul, apoi incercati din nou."
 
 #MSG_CHECK_IR_CONNECTION c=20 r=4
 "Please check the IR sensor connection, unload filament if present."
-"\x00"
+"Verificati senzorul IR, scoateti filamentul daca exista."
 
 #MSG_RECOVERING_PRINT c=20
 "Recovering print"
-"\x00"
+"Recuperare print"
 
 #MSG_REMOVE_OLD_FILAMENT c=20 r=5
 "Remove old filament and press the knob to start loading new filament."
-"\x00"
+"Scoateti filamentul vechi si apasati butonul pentru a incarca filamentul nou."
 
 #MSG_CALIBRATE_BED_RESET c=18
 "Reset XYZ calibr."
-"\x00"
+"Reset. calibr. XYZ"
 
 #MSG_RESET c=14
 "Reset"
-"\x00"
+"Reset."
 
 #MSG_RESUME_PRINT c=18
 "Resume print"
-"\x00"
+"Continua print"
 
 #MSG_RESUMING_PRINT c=20
 "Resuming print"
-"\x00"
+"Reluare print..."
 
 #MSG_BED_CORRECTION_RIGHT c=14
 "Right side[um]"
-"\x00"
+"Dreapta [um]"
 
 #MSG_RPI_PORT c=13
 "RPi port"
-"\x00"
+"Port RPi"
 
 #MSG_WIZARD_RERUN c=20 r=7
 "Running Wizard will delete current calibration results and start from the beginning. Continue?"
-"\x00"
+"Rularea Wizard-ului va sterge rezultatele curente ale calibrarii si va porni de la inceput. Continuati?"
 
 #MSG_SD_CARD c=8
 "SD card"
-"\x00"
+"Card SD"
 
 #MSG_RIGHT c=10
 "Right"
-"\x00"
+"Dreapta"
 
 #MSG_FIND_BED_OFFSET_AND_SKEW_LINE1 c=20 r=3
 "Searching bed calibration point"
-"\x00"
+"Se cauta punctele de calibrare"
 
 #MSG_LANGUAGE_SELECT c=18
 "Select language"
-"\x00"
+"Selectati limba"
 
 #MSG_SELFTEST_OK c=20
 "Self test OK"
-"\x00"
+"Testare automata OK"
 
 #MSG_SELFTEST_START c=20
 "Self test start"
-"\x00"
+"Start Autotestare"
 
 #MSG_SELFTEST c=18
 "Selftest"
-"\x00"
+"Testare automata"
 
 #MSG_SELFTEST_ERROR c=20
 "Selftest error!"
-"\x00"
+"Err. test. automata!"
 
 #MSG_SELFTEST_FAILED c=20
 "Selftest failed"
-"\x00"
+"Autotestare esuata"
 
 #MSG_FORCE_SELFTEST c=20 r=8
 "Selftest will be run to calibrate accurate sensorless rehoming."
-"\x00"
+"Testarea automata va fi rulata pentru a calibra sensorless rehoming-ul."
 
 #MSG_SEL_PREHEAT_TEMP c=20 r=6
 "Select nozzle preheat temperature which matches your material."
-"\x00"
+"Selectati temperatura de preheat a extruder-ului pentru materialul ales."
 
 #MSG_SET_TEMPERATURE c=20
 "Set temperature:"
-"\x00"
+"Setati temperatura:"
 
 #MSG_SETTINGS c=18
 "Settings"
-"\x00"
+"Setari"
 
 #MSG_SHOW_END_STOPS c=18
 "Show end stops"
-"\x00"
+"Stare endstop-uri"
 
 #MSG_FILE_CNT c=20 r=6
 "Some files will not be sorted. Max. No. of files in 1 folder for sorting is 100."
-"\x00"
+"Unele fisiere nu au putut fi sortate. Nr. maxim de fisiere intr-un folder care pot fi sortate este 100."
 
 #MSG_SORT c=7
 "Sort"
-"\x00"
+"Sortare"
 
 #MSG_NONE c=8
 "None"
-"\x00"
+"N/A"
 
 #MSG_SORT_TIME c=8
 "Time"
-"\x00"
+"Data"
 
 #MSG_SEVERE_SKEW c=14
 "Severe skew"
-"\x00"
+"Dist. severa"
 
 #MSG_SORT_ALPHA c=8
 "Alphabet"
-"\x00"
+"Alfabet"
 
 #MSG_SORTING c=20
 "Sorting files"
-"\x00"
+"Sortare fisiere..."
 
 #MSG_SOUND_LOUD c=7
 "Loud"
-"\x00"
+"Tare"
 
 #MSG_SLIGHT_SKEW c=14
 "Slight skew"
-"\x00"
+"Dist. usoara"
 
 #MSG_SOUND c=7
 "Sound"
-"\x00"
+"Sunet"
 
 #MSG_RUNOUTS c=7
 "Runouts"
@@ -1024,115 +1024,115 @@
 
 #MSG_Z-LEVELING_ENFORCED c=20 r=4
 "Some problem encountered, Z-leveling enforced ..."
-"\x00"
+"A fost intalnita o problema, calibrarea Z a fost initiata..."
 
 #MSG_SOUND_ONCE c=7
 "Once"
-"\x00"
+"O data"
 
 #MSG_SPEED c=15
 "Speed"
-"\x00"
+"Viteza"
 
 #MSG_SELFTEST_FAN_YES c=19
 "Spinning"
-"\x00"
+"Se roteste"
 
 #MSG_TEMP_CAL_WARNING c=20 r=4
 "Stable ambient temperature 21-26C is needed a rigid stand is required."
-"\x00"
+"Temp. ambient. stabila (21-26C) si o suprafata de lucru rigida necesare."
 
 #MSG_STATISTICS c=18
 "Statistics"
-"\x00"
+"Statistici"
 
 #MSG_STOP_PRINT c=18
 "Stop print"
-"\x00"
+"Oprire print"
 
 #MSG_STOPPED c=20
 "STOPPED."
-"\x00"
+"OPRIT."
 
 #MSG_SUPPORT c=18
 "Support"
-"\x00"
+"Informatii"
 
 #MSG_SELFTEST_SWAPPED c=16
 "Swapped"
-"\x00"
+"inversate"
 
 #MSG_SELECT_FILAMENT c=20
 "Select filament:"
-"\x00"
+"Select. filamentul:"
 
 #MSG_TEMP_CALIBRATION c=14
 "Temp. cal."
-"\x00"
+"Cal. temp."
 
 #MSG_SELECT_TEMP_MATCHES_MATERIAL c=20 r=4
 "Select temperature which matches your material."
-"\x00"
+"Selectati temp. potrivita pentru materialul curent."
 
 #MSG_CALIBRATION_PINDA_MENU c=17
 "Temp. calibration"
-"\x00"
+"Calibrare temp."
 
 #MSG_TEMP_CAL_FAILED c=20 r=8
 "Temperature calibration failed"
-"\x00"
+"Calibrarea temperaturii a esuat"
 
 #MSG_TEMP_CALIBRATION_DONE c=20 r=12
 "Temperature calibration is finished and active. Temp. calibration can be disabled in menu Settings->Temp. cal."
-"\x00"
+"Calibrarea temperaturii s-a terminat si este activa. Calibrarea temp. poate fi dezactivata din meniul Setari->Cal. temp."
 
 #MSG_FS_VERIFIED c=20 r=3
 "Sensor verified, remove the filament now."
-"\x00"
+"Senzorul a fost verificat, scoate filamentul."
 
 #MSG_TEMPERATURE c=18
 "Temperature"
-"\x00"
+"Temperatura"
 
 #MSG_MENU_TEMPERATURES c=15
 "Temperatures"
-"\x00"
+"Temperaturi"
 
 #MSG_FOLLOW_Z_CALIBRATION_FLOW c=20 r=9
 "There is still a need to make Z calibration. Please follow the manual, chapter First steps, section Calibration flow."
-"\x00"
+"Inca este nevoie de calibrarea Z. Va rugam urmariti manualul, capitolul First steps, sectiunea Calibration flow."
 
 #MSG_TOTAL_FILAMENT c=19
 "Total filament"
-"\x00"
+"Filament total"
 
 #MSG_TOTAL_PRINT_TIME c=19
 "Total print time"
-"\x00"
+"Durata totala print"
 
 #MSG_TUNE c=18
 "Tune"
-"\x00"
+"Optiuni"
 
 #MSG_TOTAL_FAILURES c=20
 "Total failures"
-"\x00"
+"Total erori"
 
 #MSG_TO_LOAD_FIL c=20
 "to load filament"
-"\x00"
+"a incarca filament"
 
 #MSG_TO_UNLOAD_FIL c=20
 "to unload filament"
-"\x00"
+"a scoate filament"
 
 #MSG_UNLOAD_FILAMENT c=18
 "Unload filament"
-"\x00"
+"Descarca filament"
 
 #MSG_UNLOADING_FILAMENT c=20
 "Unloading filament"
-"\x00"
+"Scoatere filament"
 
 #MSG_TOTAL c=6
 "Total"
@@ -1140,47 +1140,47 @@
 
 #MSG_USED c=19
 "Used during print"
-"\x00"
+"Folosit in print"
 
 #MSG_MENU_VOLTAGES c=15
 "Voltages"
-"\x00"
+"Voltaje"
 
 #MSG_UNKNOWN c=13
 "unknown"
-"\x00"
+"necunoscut"
 
 #MSG_USERWAIT c=20
 "Wait for user..."
-"\x00"
+"Se asteapta..."
 
 #MSG_WAITING_TEMP c=20 r=4
 "Waiting for nozzle and bed cooling"
-"\x00"
+"Se ateapta racirea extruder-ului si a patului"
 
 #MSG_WAITING_TEMP_PINDA c=20 r=3
 "Waiting for PINDA probe cooling"
-"\x00"
+"Se asteapta racirea probei PINDA"
 
 #MSG_CHANGED_BOTH c=20 r=4
 "Warning: both printer type and motherboard type changed."
-"\x00"
+"Atentie: tipul imprimantei si al placii de baza s-a schimbat."
 
 #MSG_CHANGED_MOTHERBOARD c=20 r=4
 "Warning: motherboard type changed."
-"\x00"
+"Atentie: tipul placii de baza s-a schimbat."
 
 #MSG_CHANGED_PRINTER c=20 r=4
 "Warning: printer type changed."
-"\x00"
+"Atentie: tipul imprimantei s-a schimbat."
 
 #MSG_UNLOAD_SUCCESSFUL c=20 r=2
 "Was filament unload successful?"
-"\x00"
+"Filamentul a fost scos cu succes?"
 
 #MSG_SELFTEST_WIRINGERROR c=18
 "Wiring error"
-"\x00"
+"Eroare de cablare"
 
 #MSG_WIZARD c=17
 "Wizard"
@@ -1188,27 +1188,27 @@
 
 #MSG_XYZ_DETAILS c=18
 "XYZ cal. details"
-"\x00"
+"Detalii cal. XYZ"
 
 #MSG_BED_SKEW_OFFSET_DETECTION_FITTING_FAILED c=20 r=8
 "XYZ calibration failed. Please consult the manual."
-"\x00"
+"Calibrarea XYZ a esuat. Va rugam consultati manualul."
 
 #MSG_YES c=3
 "Yes"
-"\x00"
+"Da"
 
 #MSG_WIZARD_QUIT c=20 r=8
 "You can always resume the Wizard from Calibration -> Wizard."
-"\x00"
+"Puteti oricand sa reluati Wizard-ul din Calibrare -> Wizard."
 
 #MSG_BED_SKEW_OFFSET_DETECTION_SKEW_EXTREME c=20 r=8
 "XYZ calibration all right. Skew will be corrected automatically."
-"\x00"
+"Calibrarea XYZ in regula. Distorsiunea va fi corectata automat."
 
 #MSG_BED_SKEW_OFFSET_DETECTION_SKEW_MILD c=20 r=8
 "XYZ calibration all right. X/Y axes are slightly skewed. Good job!"
-"\x00"
+"Calibrarea XYZ in regula. Axele X/Y sunt distorsionate putin. Felicitari!"
 
 #MSG_TIMEOUT c=12
 "Timeout"
@@ -1216,51 +1216,51 @@
 
 #MSG_X_CORRECTION c=13
 "X-correct:"
-"\x00"
+"Corect. X:"
 
 #MSG_BED_SKEW_OFFSET_DETECTION_PERFECT c=20 r=8
 "XYZ calibration ok. X/Y axes are perpendicular. Congratulations!"
-"\x00"
+"Calibrarea XYZ ok. Axele X/Y sunt perpendiculare. Felicitari!"
 
 #MSG_BED_SKEW_OFFSET_DETECTION_WARNING_FRONT_BOTH_FAR c=20 r=8
 "XYZ calibration compromised. Front calibration points not reachable."
-"\x00"
+"Calibrarea XYZ compromisa. Punctele de calibrare din fata nu pot fi atinse."
 
 #MSG_BED_SKEW_OFFSET_DETECTION_WARNING_FRONT_RIGHT_FAR c=20 r=8
 "XYZ calibration compromised. Right front calibration point not reachable."
-"\x00"
+"Calibrarea XYZ compromisa. Punctele de calibrare din fata dreapta nu pot fi atinse."
 
 #MSG_LOAD_ALL c=17
 "Load all"
-"\x00"
+"Incarcati toate"
 
 #MSG_BED_SKEW_OFFSET_DETECTION_POINT_NOT_FOUND c=20 r=6
 "XYZ calibration failed. Bed calibration point was not found."
-"\x00"
+"Calibrarea XYZ a esuat. Un punct de calibrare a patului nu a fost gasit."
 
 #MSG_BED_SKEW_OFFSET_DETECTION_FAILED_FRONT_BOTH_FAR c=20 r=6
 "XYZ calibration failed. Front calibration points not reachable."
-"\x00"
+"Calibrarea XYZ a esuat. Punctele de calibrare din fata nu pot fi atinse."
 
 #MSG_BED_SKEW_OFFSET_DETECTION_FAILED_FRONT_RIGHT_FAR c=20 r=6
 "XYZ calibration failed. Right front calibration point not reachable."
-"\x00"
+"Calibrarea XYZ a esuat. Punctele de calibrare din fata dreapta nu pot fi atinse."
 
 #MSG_Y_DIST_FROM_MIN c=20
 "Y distance from min"
-"\x00"
+"Distanta Y de la min"
 
 #MSG_WIZARD_V2_CAL_2 c=20 r=12
 "The printer will start printing a zig-zag line. Rotate the knob until you reach the optimal height. Check the pictures in the handbook (Calibration chapter)."
-"\x00"
+"Imprimanta va printa o linie zig-zag. Rotiti butonul pana cand ajungeti la inaltimea optima. Folositi pozele din handbook (capitolul Calibration)."
 
 #MSG_FIL_FAILED c=20 r=5
 "Verification failed, remove the filament and try again."
-"\x00"
+"Verificarea a esuat, scoateti filamentul si incercati din nou."
 
 #MSG_Y_CORRECTION c=13
 "Y-correct:"
-"\x00"
+"Corect. Y:"
 
 #MSG_OFF c=3
 "Off"
@@ -1272,15 +1272,15 @@
 
 #MSG_BACK c=18
 "Back"
-"\x00"
+"Inapoi"
 
 #MSG_CHECKS c=18
 "Checks"
-"\x00"
+"Verificari"
 
 #MSG_FALSE_TRIGGERING c=20
 "False triggering"
-"\x00"
+"nu detect. schimbare"
 
 #MSG_STRICT c=8
 "Strict"
@@ -1288,15 +1288,15 @@
 
 #MSG_WARN c=8
 "Warn"
-"\x00"
+"Avert."
 
 #MSG_HW_SETUP c=18
 "HW Setup"
-"\x00"
+"Setup HW"
 
 #MSG_MAGNETS_COMP c=13
 "Magnets comp."
-"\x00"
+"Comp. magneti"
 
 #MSG_MESH c=12
 "Mesh"
@@ -1304,15 +1304,15 @@
 
 #MSG_MK3S_FIRMWARE_ON_MK3 c=20 r=4
 "MK3S firmware detected on MK3 printer"
-"\x00"
+"Firmware MK3S detectat pe imprimanta MK3"
 
 #MSG_MMU_MODE c=8
 "MMU Mode"
-"\x00"
+"Mod MMU"
 
 #MSG_MODE_CHANGE_IN_PROGRESS c=20 r=3
 "Mode change in progress..."
-"\x00"
+"Schimbare mod in progres..."
 
 #MSG_MODEL c=8
 "Model"
@@ -1320,84 +1320,84 @@
 
 #MSG_NOZZLE_DIAMETER c=10
 "Nozzle d."
-"\x00"
+"Diam. varf"
 
 #MSG_GCODE_DIFF_CONTINUE c=20 r=4
 "G-code sliced for a different level. Continue?"
-"\x00"
+"Versiune de G-code incorecta. Continuati?"
 
 #MSG_GCODE_DIFF_CANCELLED c=20 r=7
 "G-code sliced for a different level. Please re-slice the model again. Print cancelled."
-"\x00"
+"Versiune de G-code incorecta. Va rugam pregatiti modelul din nou. Print anulat."
 
 #MSG_GCODE_DIFF_PRINTER_CONTINUE c=20 r=5
 "G-code sliced for a different printer type. Continue?"
-"\x00"
+"G-code pregatit pentru un alt tip de printer. Continuati?"
 
 #MSG_GCODE_DIFF_PRINTER_CANCELLED c=20 r=8
 "G-code sliced for a different printer type. Please re-slice the model again. Print cancelled."
-"\x00"
+"G-code pregatit pentru un alt tip de printer. Va rugam pregatiti modelul din nou. Print anulat."
 
 #MSG_GCODE_NEWER_FIRMWARE_CONTINUE c=20 r=5
 "G-code sliced for a newer firmware. Continue?"
-"\x00"
+"G-code pregatit pentru firmware mai nou. Continuati?"
 
 #MSG_GCODE_NEWER_FIRMWARE_CANCELLED c=20 r=8
 "G-code sliced for a newer firmware. Please update the firmware. Print cancelled."
-"\x00"
+"G-code pregatit pentru firmware mai nou. Va rugam actualizati firmware-ul. Print anulat."
 
 #MSG_PREHEATING_TO_CUT c=20
 "Preheating to cut"
-"\x00"
+"Preincalzire..."
 
 #MSG_PREHEATING_TO_EJECT c=20
 "Preheating to eject"
-"\x00"
+"Preincalzire..."
 
 #MSG_NOZZLE_DIFFERS_CONTINUE c=20 r=5
 "Printer nozzle diameter differs from the G-code. Continue?"
-"\x00"
+"Diametrul varfului este diferit de cel din G-code. Continuati?"
 
 #MSG_NOZZLE_DIFFERS_CANCELLED c=20 r=9
 "Printer nozzle diameter differs from the G-code. Please check the value in settings. Print cancelled."
-"\x00"
+"Diametrul varfului este diferit de cel din G-code. Va rugam verificati valoarea in setari. Print anulat."
 
 #MSG_SELFTEST_FS_LEVEL c=20
 "%s level expected"
-"\x00"
+"nivel %s asteptat"
 
 #MSG_RENAME c=18
 "Rename"
-"\x00"
+"Redenumeste"
 
 #MSG_SELECT c=18
 "Select"
-"\x00"
+"Selecteaza"
 
 #MSG_INFO_SENSORS c=18
 "Sensor info"
-"\x00"
+"Info. senzori"
 
 #MSG_SHEET c=10
 "Sheet"
-"\x00"
+"Suprafata"
 
 #MSG_SOUND_BLIND c=7
 "Assist"
-"\x00"
+"Asist."
 
 #MSG_STEEL_SHEET c=18
 "Steel sheets"
-"\x00"
+"Suprafete print"
 
 #MSG_Z_CORRECTION c=13
 "Z-correct:"
-"\x00"
+"Corect. Z:"
 
 #MSG_Z_PROBE_NR c=14
 "Z-probe nr."
-"\x00"
+"Nr. Z-probe"
 
 #MSG_PRINTER_IP c=18
 "Printer IP Addr:"
-"\x00"
+"IP imprimanta:"

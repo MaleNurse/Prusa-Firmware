@@ -236,6 +236,9 @@ const char* lang_get_name_by_code(uint16_t code)
 #ifdef COMMUNITY_LANG_GROUP1_LT
 	case LANG_CODE_LT: return _n("Lietuviu"); //community Lithuanian contribution
 #endif // COMMUNITY_LANG_GROUP1_LT
+#ifdef COMMUNITY_LANG_GROUP1_RO
+	case LANG_CODE_RO: return _n("Romana"); //community Romanian contribution
+#endif // COMMUNITY_LANG_GROUP1_RO
 
 //Use the 3 lines below as a template and replace 'QR' and 'New language'
 //#ifdef COMMUNITY_LANG_GROUP1_QR 
@@ -300,5 +303,5 @@ void lang_boot_update_start(uint8_t lang)
 {
 	uint8_t cnt = lang_get_count();
 	if ((lang < 2) || (lang > cnt)) return; //only languages from xflash can be selected
-	bootapp_reboot_user0(lang << 4);
+	bootapp_reboot_user0(lang << 3);
 }
