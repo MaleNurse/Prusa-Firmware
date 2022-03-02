@@ -218,9 +218,15 @@ const char* lang_get_name_by_code(uint16_t code)
 #ifdef COMMUNITY_LANG_GROUP1_SV
 	case LANG_CODE_SV: return _n("Svenska"); //community Swedish contribution
 #endif // COMMUNITY_LANG_GROUP1_SV
+#ifdef COMMUNITY_LANG_GROUP1_NO
+	case LANG_CODE_NO: return _n("Norsk"); //community Swedish contribution
+#endif // COMMUNITY_LANG_GROUP1_NO
 #ifdef COMMUNITY_LANG_GROUP1_DA
 	case LANG_CODE_DA: return _n("Dansk"); //community Danish contribution
 #endif // COMMUNITY_LANG_GROUP1_DA
+#ifdef COMMUNITY_LANG_GROUP1_SK
+	case LANG_CODE_SK: return _n("Slovencina"); //community Slovak contribution
+#endif // COMMUNITY_LANG_GROUP1_SK
 #ifdef COMMUNITY_LANG_GROUP1_SL
 	case LANG_CODE_SL: return _n("Slovenscina"); //community Slovanian contribution
 #endif // COMMUNITY_LANG_GROUP1_SL

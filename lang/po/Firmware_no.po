@@ -1,14 +1,14 @@
-# Translation of Prusa-Firmware into Lithuanian.
+# Translation of Prusa-Firmware into Norwegian.
 #
 msgid ""
 msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: lt\n"
+"Language: no\n"
 "Project-Id-Version: Prusa-Firmware\n"
-"POT-Creation-Date: Tue 08 Feb 2022 02:45:10 PM CET\n"
-"PO-Revision-Date: Tue 08 Feb 2022 02:45:10 PM CET\n"
+"POT-Creation-Date: Tue 22 Feb 2022 10:44:28 AM CET\n"
+"PO-Revision-Date: Tue 22 Feb 2022 10:44:28 AM CET\n"
 "Language-Team: \n"
 "X-Generator: Poedit 2.0.7\n"
 "X-Poedit-SourceCharset: UTF-8\n"
@@ -528,7 +528,7 @@ msgstr ""
 # MSG_WIZARD_WELCOME c=20 r=7
 #: messages.c:121
 msgid "Hi, I am your Original Prusa i3 printer. Would you like me to guide you through the setup process?"
-msgstr "Sveiki, as esu jusu originalus Prusa i3 spausdintuvas. Ar noretumete, kad padetu jums atlikti sarankos procesa?"
+msgstr "Hei, jeg er din originale Prusa i3 -skriver. Vil du at jeg skal veilede deg gjennom oppsettsprosessen?"
 
 # MSG_FILAMENTCHANGE c=18
 #: messages.c:43
