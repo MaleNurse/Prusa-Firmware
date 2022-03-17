@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Version 1.0.1 Build 36
+# Version 1.0.1 Build 46
 #
 # lang-import.sh - multi-language support script
 #  for importing translated xx.po
@@ -37,6 +37,8 @@
 # 11 Feb. 2022, 3d-gussner, Change to python3
 # 14 Feb. 2022, 3d-gussner, Replace non-block space with space
 #                           Fix single language run without config.sh OK
+# 12 Mar. 2022, 3d-gussner, Update Norwegian replace umlaut and diacritics
+#                           Update Swedish umlaut and diacritics
 #############################################################################
 
 echo "$(tput setaf 2)lang-import.sh started$(tput sgr 0)" >&2
@@ -149,8 +151,9 @@ if [ "$LNG" = "cz" ]; then
  sed -i 's/\xc5\xbe/z/g' $LNG'_filtered.po'
 fi
 
-#replace in german translation https://en.wikipedia.org/wiki/German_orthography
-if [ "$LNG" = "de" ]; then
+#replace in German translation https://en.wikipedia.org/wiki/German_orthography
+#replace in Swedish as well
+if [[ "$LNG" = "de" || "$LNG" = "sv" ]]; then
 #replace UTF-8 'äöüß' to HD44780 A00 'äöüß'
  #replace 'ä' with 'A00 ROM ä'
  sed -i 's/\xc3\xa4/\\xe1/g' $LNG'_filtered.po'
@@ -265,26 +268,28 @@ if [ "$LNG" = "nl" ]; then
 fi
 
 if [ "$LNG" = "sv" ]; then
-#repace 'Å' with 'Aa'
-sed -i 's/\xc3\x85/Aa/g' $LNG'_filtered.po'
-#repace 'å' with 'aa'
-sed -i 's/\xc3\xA5/aa/g' $LNG'_filtered.po'
+#repace 'Å' with 'A'
+sed -i 's/\xc3\x85/A/g' $LNG'_filtered.po'
+#repace 'å' with 'a'
+sed -i 's/\xc3\xA5/a/g' $LNG'_filtered.po'
 fi
 
 #https://en.wikipedia.org/wiki/Norwegian_orthography éèêóòôù ÅåÆæØø
 if [ "$LNG" = "no" ]; then
+ #replace UTF-8 'æÆøØ' to HD44780 A00 'äö'
+ #repace 'Æ' with 'Ä'
+ sed -i 's/\xc3\x86/\\xe1/g' $LNG'_filtered.po'
+ #repace 'æ' with 'ä'
+ sed -i 's/\xc3\xa6/\\xe1/g' $LNG'_filtered.po'
+ #repace 'Ø' with 'Ö'
+ sed -i 's/\xc3\x98/\\xef/g' $LNG'_filtered.po'
+ #repace 'ø' with 'ö'
+ sed -i 's/\xc3\xb8/\\xef/g' $LNG'_filtered.po'
+ #replace diacritics
  #repace 'Å' with 'A'
  sed -i 's/\xc3\x85/A/g' $LNG'_filtered.po'
  #repace 'å' with 'a'
- sed -i 's/\xc3\xA5/a/g' $LNG'_filtered.po'
- #repace 'Æ' with 'Ae'
- sed -i 's/\xc3\x86/A/g' $LNG'_filtered.po'
- #repace 'æ' with 'ae'
- sed -i 's/\xc3\xa6/a/g' $LNG'_filtered.po'
- #repace 'Ø' with 'O'
- sed -i 's/\xc3\x98/O/g' $LNG'_filtered.po'
- #repace 'ø' with 'o'
- sed -i 's/\xc3\xb8/o/g' $LNG'_filtered.po'
+ sed -i 's/\xc3\xa5/a/g' $LNG'_filtered.po'
  #replace 'é' with 'e'
  sed -i 's/\xc3\xa9/e/g' $LNG'_filtered.po'
  #replace 'è' with 'e'
@@ -502,7 +507,9 @@ sed -i "s/\r//g" lang_en_$LNG.txt
 
 #check new lang
 python3 ../../lang-check.py $LNG --warn-empty
-python3 ../../lang-check.py $LNG --information >$LNG-output.txt
+#gerenate some output
+python3 ../../lang-check.py $LNG --information >output-layout-$LNG.txt
+grep "msgstr" $LNGISO.po | cut -d '"' -f2 | sort >output-sorted-$LNG.txt
 echo >&2
 echo "$(tput setaf 2)lang-import.sh finished$(tput sgr 0)">&2
 
