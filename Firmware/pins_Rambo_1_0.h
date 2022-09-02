@@ -57,17 +57,14 @@
 #define TEMP_PINDA_PIN          1 //A1
 
 
+#define TEMP_TIM 3
+
 
 #define E0_STEP_PIN            34
 #define E0_DIR_PIN             43
 #define E0_ENABLE_PIN          26
 #define E0_MS1_PIN             65
 #define E0_MS2_PIN             66
-
-#ifdef SNMM 
-  #define E_MUX0_PIN 17
-  #define E_MUX1_PIN 16
-#endif
 
 
 #define MOTOR_CURRENT_PWM_XY_PIN 46

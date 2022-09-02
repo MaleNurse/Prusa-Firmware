@@ -7,6 +7,8 @@
 extern "C" {
 #endif //defined(__cplusplus)
 
+#define WELCOME_MSG (CUSTOM_MENDEL_NAME " OK.")
+
 // LCD Menu Messages
 //internationalized messages
 extern const char MSG_AUTO_HOME[];
@@ -39,10 +41,6 @@ extern const char MSG_EXTRUDER_FAN_SPEED[];
 extern const char MSG_PRINT_FAN_SPEED[];
 extern const char MSG_FILAMENT_CLEAN[];
 extern const char MSG_FILAMENT_LOADED[];
-extern const char MSG_FILAMENT_LOADING_T0[];
-extern const char MSG_FILAMENT_LOADING_T1[];
-extern const char MSG_FILAMENT_LOADING_T2[];
-extern const char MSG_FILAMENT_LOADING_T3[];
 extern const char MSG_FILAMENTCHANGE[];
 extern const char MSG_FIND_BED_OFFSET_AND_SKEW_LINE1[];
 extern const char MSG_FINISHING_MOVEMENTS[];
@@ -125,7 +123,7 @@ extern const char MSG_WIZARD_WELCOME[];
 extern const char MSG_WIZARD_WELCOME_SHIPPING[];
 extern const char MSG_YES[];
 extern const char MSG_V2_CALIBRATION[];
-extern const char WELCOME_MSG[];
+extern const char MSG_WELCOME[];
 extern const char MSG_OFF[];
 extern const char MSG_ON[];
 extern const char MSG_NA[];
@@ -170,6 +168,10 @@ extern const char MSG_IR_04_OR_NEWER[];
 extern const char MSG_IR_03_OR_OLDER[];
 extern const char MSG_IR_UNKNOWN[];
 #endif
+#ifdef TEMP_MODEL
+extern const char MSG_THERMAL_ANOMALY[];
+extern const char MSG_PAUSED_THERMAL_ERROR[];
+#endif
 
 //not internationalized messages
 extern const char MSG_BROWNOUT_RESET[];
@@ -182,7 +184,9 @@ extern const char MSG_WATCHDOG_RESET[];
 extern const char MSG_Z_MAX[];
 extern const char MSG_Z_MIN[];
 extern const char MSG_ZPROBE_OUT[];
+#ifdef ENABLE_AUTO_BED_LEVELING
 extern const char MSG_ZPROBE_ZOFFSET[];
+#endif
 extern const char MSG_TMC_OVERTEMP[];
 extern const char MSG_Enqueing[];
 extern const char MSG_ENDSTOPS_HIT[];
@@ -195,9 +199,9 @@ extern const char MSG_ERR_STOPPED[];
 extern const char MSG_ENDSTOP_HIT[];
 extern const char MSG_EJECT_FILAMENT[];
 extern const char MSG_CUT_FILAMENT[];
-extern const char MSG_OCTOPRINT_PAUSE[];
+extern const char MSG_OCTOPRINT_ASK_PAUSE[];
 extern const char MSG_OCTOPRINT_PAUSED[];
-extern const char MSG_OCTOPRINT_RESUME[];
+extern const char MSG_OCTOPRINT_ASK_RESUME[];
 extern const char MSG_OCTOPRINT_RESUMED[];
 extern const char MSG_OCTOPRINT_CANCEL[];
 extern const char MSG_FANCHECK_EXTRUDER[];

@@ -1,3 +1,9 @@
+# IDE data
+/.settings
+/.project
+/.cproject
+/.vscode
+
 # Temporary configuration
 /Firmware/Configuration_prusa.h
 

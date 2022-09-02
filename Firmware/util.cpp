@@ -6,6 +6,7 @@
 #include "language.h"
 #include "util.h"
 #include <avr/pgmspace.h>
+#include "Prusa_farm.h"
 
 // Allocate the version string in the program memory. Otherwise the string lands either on the stack or in the global RAM.
 static const char FW_VERSION_STR[] PROGMEM = FW_VERSION;
@@ -187,6 +188,9 @@ bool force_selftest_if_fw_version()
 
 bool show_upgrade_dialog_if_version_newer(const char *version_string)
 {
+    if(oCheckVersion == ClCheckVersion::_None)
+        return false;
+
     int8_t upgrade = is_provided_version_newer(version_string);
     if (upgrade < 0)
         return false;
@@ -431,7 +435,7 @@ lcd_update_enable(true);           // display / status-line recovery
 #define GCODE_DELIMITER '"'
 #define ELLIPSIS "..."
 
-char* code_string(char* pStr,size_t* nLength)
+char* code_string(const char* pStr,size_t* nLength)
 {
 char* pStrBegin;
 char* pStrEnd;
@@ -444,35 +448,22 @@ pStrEnd=strchr(pStrBegin,GCODE_DELIMITER);
 if(!pStrEnd)
      return(NULL);
 *nLength=pStrEnd-pStrBegin;
-return(pStrBegin);
+return pStrBegin;
 }
 
-void printer_smodel_check(char* pStrPos)
+void printer_smodel_check(const char* pStrPos)
 {
 char* pResult;
 size_t nLength,nPrinterNameLength;
-bool bCheckOK;
-char sPrinterName[PRINTER_NAME_LENGTH+sizeof(ELLIPSIS)-1+1]="";
 
-nPrinterNameLength=strlen_P(::sPrinterName);
-pResult=code_string(pStrPos,&nLength);
-if(pResult!=NULL)
-     {
-     strlcpy(sPrinterName,pResult,min(nPrinterNameLength,nLength)+1);
-     if(nLength>nPrinterNameLength)
-          strcat(sPrinterName,ELLIPSIS);
-     bCheckOK=(nLength==nPrinterNameLength);
-     if(bCheckOK&&(!strncasecmp_P(pResult,::sPrinterName,nLength))) // i.e. string compare execute only if lengths are same
-          return;
-     }
-//SERIAL_ECHO_START;
-//SERIAL_ECHOLNPGM("Printer model differs from the G-code ...");
-//SERIAL_ECHOPGM("actual  : \"");
-//serialprintPGM(::sPrinterName);
-//SERIAL_ECHOLNPGM("\"");
-//SERIAL_ECHOPGM("expected: \"");
-////SERIAL_ECHO(sPrinterName);
-//SERIAL_ECHOLNPGM("\"");
+nPrinterNameLength = strlen_P(sPrinterName);
+pResult = code_string(pStrPos,&nLength);
+
+if(pResult != NULL && nLength == nPrinterNameLength) {
+     // Only compare them if the lengths match
+     if (strncmp_P(pResult, sPrinterName, nLength) == 0) return;
+}
+
 switch(oCheckModel)
      {
      case ClCheckModel::_Warn:

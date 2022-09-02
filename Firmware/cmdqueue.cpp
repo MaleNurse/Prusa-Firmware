@@ -1,6 +1,7 @@
 #include "cmdqueue.h"
 #include "cardreader.h"
 #include "ultralcd.h"
+#include "Prusa_farm.h"
 
 // Reserve BUFSIZE lines of length MAX_CMD_SIZE plus CMDBUFFER_RESERVE_FRONT.
 char cmdbuffer[BUFSIZE * (MAX_CMD_SIZE + 1) + CMDBUFFER_RESERVE_FRONT];
@@ -28,7 +29,6 @@ ShortTimer serialTimeoutTimer;
 
 long gcode_N = 0;
 long gcode_LastN = 0;
-long Stopped_gcode_LastN = 0;
 
 uint32_t sdpos_atomic = 0;
 
@@ -94,7 +94,7 @@ void cmdqueue_reset()
 {
 	while (buflen)
 	{
-		// printf_P(PSTR("dumping: \"%s\" of type %hu\n"), cmdbuffer+bufindr+CMDHDRSIZE, CMDBUFFER_CURRENT_TYPE);
+		// printf_P(PSTR("dumping: \"%s\" of type %u\n"), cmdbuffer+bufindr+CMDHDRSIZE, CMDBUFFER_CURRENT_TYPE);
 		ClearToSend();
 		cmdqueue_pop_front();
 	}
@@ -368,16 +368,6 @@ void repeatcommand_front()
     cmdbuffer_front_already_processed = true;
 } 
 
-void proc_commands() {
-	if (buflen)
-	{
-		process_commands();
-		if (!cmdbuffer_front_already_processed)
-			cmdqueue_pop_front();
-		cmdbuffer_front_already_processed = false;
-	}
-}
-
 void get_command()
 {
     // Test and reserve space for the new command string.
@@ -393,13 +383,8 @@ void get_command()
   while (((MYSERIAL.available() > 0 && !saved_printing) || (MYSERIAL.available() > 0 && isPrintPaused)) && !cmdqueue_serial_disabled) {  //is print is saved (crash detection or filament detection), dont process data from serial line
 	
     char serial_char = MYSERIAL.read();
-/*    if (selectedSerialPort == 1)
-    {
-        selectedSerialPort = 0; 
-        MYSERIAL.write(serial_char); // for debuging serial line 2 in farm_mode
-        selectedSerialPort = 1; 
-    } */ //RP - removed
-      serialTimeoutTimer.start();
+
+    serialTimeoutTimer.start();
 
     if (serial_char < 0)
         // Ignore extended ASCII characters. These characters have no meaning in the G-code apart from the file names
@@ -422,7 +407,7 @@ void get_command()
 
 		  // Line numbers must be first in buffer
 
-		  if ((strstr(cmdbuffer+bufindw+CMDHDRSIZE, "PRUSA") == NULL) &&
+		  if ((strstr_P(cmdbuffer+bufindw+CMDHDRSIZE, PSTR("PRUSA")) == NULL) &&
 			  (cmdbuffer[bufindw+CMDHDRSIZE] == 'N')) {
 
 			  // Line number met. When sending a G-code over a serial line, each line may be stamped with its index,
@@ -446,7 +431,7 @@ void get_command()
 				  char *p = cmdbuffer+bufindw+CMDHDRSIZE;
 				  while (p != strchr_pointer)
 					  checksum = checksum^(*p++);
-				  if (int(strtol(strchr_pointer+1, NULL, 10)) != int(checksum)) {
+				  if (code_value_short() != (int16_t)checksum) {
 					  SERIAL_ERROR_START;
 					  SERIAL_ERRORRPGM(_n("checksum mismatch, Last Line: "));////MSG_ERR_CHECKSUM_MISMATCH
 					  SERIAL_ERRORLN(gcode_LastN);
@@ -469,8 +454,6 @@ void get_command()
 
 			  // Don't parse N again with code_seen('N')
 			  cmdbuffer[bufindw + CMDHDRSIZE] = '$';
-			  //if no errors, continue parsing
-			  gcode_LastN = gcode_N;
 		}
         // if we don't receive 'N' but still see '*'
         if ((cmdbuffer[bufindw + CMDHDRSIZE] != 'N') && (cmdbuffer[bufindw + CMDHDRSIZE] != '$') && (strchr(cmdbuffer+bufindw+CMDHDRSIZE, '*') != NULL))
@@ -483,37 +466,48 @@ void get_command()
             serial_count = 0;
             return;
         }
-        if ((strchr_pointer = strchr(cmdbuffer+bufindw+CMDHDRSIZE, 'G')) != NULL) {
-              if (! IS_SD_PRINTING) {
-                      usb_printing_counter = 10;
-                      is_usb_printing = true;
-              }
-            if (Stopped == true) {
-                int gcode = strtol(strchr_pointer+1, NULL, 10);
-                if (gcode >= 0 && gcode <= 3) {
-                    SERIAL_ERRORLNRPGM(MSG_ERR_STOPPED);
-                    LCD_MESSAGERPGM(_T(MSG_STOPPED));
-                }
-            }
-        } // end of 'G' command
-
-        //If command was e-stop process now
+        // Handle KILL early, even when Stopped
         if(strcmp(cmdbuffer+bufindw+CMDHDRSIZE, "M112") == 0)
           kill(MSG_M112_KILL, 2);
-        
-        // Store the current line into buffer, move to the next line.
+        // Handle the USB timer
+        if ((strchr_pointer = strchr(cmdbuffer+bufindw+CMDHDRSIZE, 'G')) != NULL) {
+            if (!IS_SD_PRINTING) {
+                usb_timer.start();
+            }
+        }
+        if (Stopped == true) {
+            // Stopped can be set either during error states (thermal error: cannot continue), or
+            // when a printer-initiated action is processed. In such case the printer will send to
+            // the host an action, but cannot know if the action has been processed while new
+            // commands are being sent. In this situation we just drop the command while issuing
+            // periodic "busy" messages in the main loop. Since we're not incrementing the received
+            // line number, a request for resend will happen (if necessary), ensuring we don't skip
+            // commands whenever Stopped is cleared and processing resumes.
+            serial_count = 0;
+            return;
+        }
+
+        // Command is complete: store the current line into buffer, move to the next line.
+
 		// Store type of entry
         cmdbuffer[bufindw] = gcode_N ? CMDBUFFER_CURRENT_TYPE_USB_WITH_LINENR : CMDBUFFER_CURRENT_TYPE_USB;
+
 #ifdef CMDBUFFER_DEBUG
         SERIAL_ECHO_START;
         SERIAL_ECHOPGM("Storing a command line to buffer: ");
         SERIAL_ECHO(cmdbuffer+bufindw+CMDHDRSIZE);
         SERIAL_ECHOLNPGM("");
 #endif /* CMDBUFFER_DEBUG */
+
+        // Store command itself
         bufindw += strlen(cmdbuffer+bufindw+CMDHDRSIZE) + (1 + CMDHDRSIZE);
         if (bufindw == sizeof(cmdbuffer))
             bufindw = 0;
         ++ buflen;
+
+        // Update the processed gcode line
+        gcode_LastN = gcode_N;
+
 #ifdef CMDBUFFER_DEBUG
         SERIAL_ECHOPGM("Number of commands in the buffer: ");
         SERIAL_ECHO(buflen);
@@ -541,7 +535,7 @@ void get_command()
     }
 
   #ifdef SDSUPPORT
-  if(!card.sdprinting || serial_count!=0){
+  if(!card.sdprinting || !card.isFileOpen() || serial_count!=0){
     // If there is a half filled buffer from serial line, wait until return before
     // continuing with the serial line.
      return;
@@ -638,6 +632,10 @@ void get_command()
       // cleared by printingHasFinished after peforming all remaining moves.
       if(!cmdqueue_calc_sd_length())
       {
+          // queue is complete, but before we process EOF commands prevent
+          // re-entry by disabling SD processing from any st_synchronize call
+          card.closefile();
+
           SERIAL_PROTOCOLLNRPGM(_n("Done printing file"));////MSG_FILE_PRINTED
           stoptime=_millis();
           char time[30];

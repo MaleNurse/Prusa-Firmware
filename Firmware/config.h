@@ -6,7 +6,8 @@
 #include "pins.h"
 
 #if (defined(VOLT_IR_PIN) && defined(IR_SENSOR))
-# define IR_SENSOR_ANALOG
+// TODO: IR_SENSOR_ANALOG currently disabled as being incompatible with the new thermal regulation
+// # define IR_SENSOR_ANALOG
 #endif
 
 //ADC configuration
@@ -20,7 +21,7 @@
 #define ADC_CHAN_CNT      8         //number of used channels)
 #endif //!IR_SENSOR_ANALOG
 #define ADC_OVRSAMPL      16        //oversampling multiplier
-#define ADC_CALLBACK      adc_ready //callback function ()
+#define ADC_CALLBACK      adc_callback //callback function ()
 
 //SWI2C configuration
 //#define SWI2C_SDA         20 //SDA on P3
@@ -107,4 +108,11 @@
 #define EMERGENCY_HANDLERS
 #endif
 
+//FARM_MODE
+#if ( LANG_MODE == 0 ) && defined(XFLASH) //Save resources on EINSY and disable FARM_MODE on multi-language version
+#define PRUSA_FARM
+#endif //PRUSA_FARM only in english on EINSYs
+#ifndef XFLASH //enable FARM_MODE on miniRAMBo boards
+#define PRUSA_FARM
+#endif
 #endif //_CONFIG_H

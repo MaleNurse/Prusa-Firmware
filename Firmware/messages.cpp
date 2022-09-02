@@ -2,9 +2,6 @@
 #include "language.h"
 
 //this is because we need include Configuration_prusa.h (CUSTOM_MENDEL_NAME)
-#define bool char
-#define true 1
-#define false 0
 #include "Configuration_prusa.h"
 
 //internationalized messages
@@ -38,10 +35,6 @@ const char MSG_EXTRUDER_FAN_SPEED[] PROGMEM_I1 = ISTR("Extruder fan:");////MSG_E
 const char MSG_PRINT_FAN_SPEED[] PROGMEM_I1 = ISTR("Print fan:"); ////MSG_PRINT_FAN_SPEED c=16
 const char MSG_FILAMENT_CLEAN[] PROGMEM_I1 = ISTR("Filament extruding & with correct color?"); ////MSG_FILAMENT_CLEAN c=20 r=2
 const char MSG_FILAMENT_LOADED[] PROGMEM_I1 = ISTR("Is filament loaded?"); ////MSG_FILAMENT_LOADED c=20 r=2
-const char MSG_FILAMENT_LOADING_T0[] PROGMEM_I1 = ISTR("Insert filament into extruder 1. Click when done."); ////MSG_FILAMENT_LOADING_T0 c=20 r=4
-const char MSG_FILAMENT_LOADING_T1[] PROGMEM_I1 = ISTR("Insert filament into extruder 2. Click when done."); ////MSG_FILAMENT_LOADING_T1 c=20 r=4
-const char MSG_FILAMENT_LOADING_T2[] PROGMEM_I1 = ISTR("Insert filament into extruder 3. Click when done."); ////MSG_FILAMENT_LOADING_T2 c=20 r=4
-const char MSG_FILAMENT_LOADING_T3[] PROGMEM_I1 = ISTR("Insert filament into extruder 4. Click when done."); ////MSG_FILAMENT_LOADING_T3 c=20 r=4
 const char MSG_FILAMENTCHANGE[] PROGMEM_I1 = ISTR("Change filament"); ////MSG_FILAMENTCHANGE c=18
 const char MSG_FIND_BED_OFFSET_AND_SKEW_LINE1[] PROGMEM_I1 = ISTR("Searching bed calibration point"); ////MSG_FIND_BED_OFFSET_AND_SKEW_LINE1 c=20 r=3
 const char MSG_FINISHING_MOVEMENTS[] PROGMEM_I1 = ISTR("Finishing movements"); ////MSG_FINISHING_MOVEMENTS c=20
@@ -166,13 +159,17 @@ const char MSG_IR_04_OR_NEWER[] PROGMEM_I1 = ISTR(" 0.4 or newer");////MSG_IR_04
 const char MSG_IR_03_OR_OLDER[] PROGMEM_I1 = ISTR(" 0.3 or older");////MSG_IR_03_OR_OLDER c=18
 const char MSG_IR_UNKNOWN[] PROGMEM_I1 = ISTR("unknown state");////MSG_IR_UNKNOWN c=18
 #endif
+#ifdef TEMP_MODEL
+extern const char MSG_THERMAL_ANOMALY[] PROGMEM_I1 = ISTR("THERMAL ANOMALY");////c=20
+extern const char MSG_PAUSED_THERMAL_ERROR[] PROGMEM_I1 = ISTR("PAUSED THERMAL ERROR");////c=20
+#endif
 
 //not internationalized messages
 const char MSG_AUTO_DEPLETE[] PROGMEM_N1 = ISTR("SpoolJoin"); ////MSG_AUTO_DEPLETE c=13
 const char MSG_FIRMWARE[] PROGMEM_N1 = ISTR("Firmware"); ////MSG_FIRMWARE c=8
 const char MSG_TOSHIBA_FLASH_AIR_COMPATIBILITY[] PROGMEM_N1 = ISTR("FlashAir"); ////MSG_TOSHIBA_FLASH_AIR_COMPATIBILITY c=8
 const char MSG_PINDA[] PROGMEM_N1 = ISTR("PINDA");////MSG_PINDA c=5
-const char WELCOME_MSG[] PROGMEM_N1 = ISTR(CUSTOM_MENDEL_NAME " OK."); ////c=20
+const char MSG_WELCOME[] PROGMEM_N1 = WELCOME_MSG;
 const char MSG_SD_WORKDIR_FAIL[] PROGMEM_N1 = "workDir open failed"; ////
 const char MSG_BROWNOUT_RESET[] PROGMEM_N1 = " Brown out Reset"; ////
 const char MSG_EXTERNAL_RESET[] PROGMEM_N1 = " External Reset"; ////
@@ -184,7 +181,9 @@ const char MSG_WATCHDOG_RESET[] PROGMEM_N1 = " Watchdog Reset"; ////
 const char MSG_Z_MAX[] PROGMEM_N1 = "z_max: "; ////
 const char MSG_Z_MIN[] PROGMEM_N1 = "z_min: "; ////
 const char MSG_ZPROBE_OUT[] PROGMEM_N1 = "Z probe out. bed"; ////
+#ifdef ENABLE_AUTO_BED_LEVELING
 const char MSG_ZPROBE_ZOFFSET[] PROGMEM_N1 = "Z Offset"; ////
+#endif
 const char MSG_TMC_OVERTEMP[] PROGMEM_N1 = "TMC DRIVER OVERTEMP"; ////
 const char MSG_Enqueing[] PROGMEM_N1 = "enqueing \""; ////
 const char MSG_ENDSTOPS_HIT[] PROGMEM_N1 = "endstops hit: "; ////
@@ -193,11 +192,11 @@ const char MSG_OK[] PROGMEM_N1 = "ok"; ////
 const char MSG_SD_OPEN_FILE_FAIL[] PROGMEM_N1 = "open failed, File: "; ////
 const char MSG_ENDSTOP_OPEN[] PROGMEM_N1 = "open"; ////
 const char MSG_POWERUP[] PROGMEM_N1 = "PowerUp"; ////
-const char MSG_ERR_STOPPED[] PROGMEM_N1 = "Printer stopped due to errors. Fix the error and use M999 to restart. (Temperature is reset. Set it after restarting)"; ////
+const char MSG_ERR_STOPPED[] PROGMEM_N1 = "Printer stopped due to errors. Supervision required."; ////
 const char MSG_ENDSTOP_HIT[] PROGMEM_N1 = "TRIGGERED"; ////
-const char MSG_OCTOPRINT_PAUSE[] PROGMEM_N1 = "// action:pause"; ////
+const char MSG_OCTOPRINT_ASK_PAUSE[] PROGMEM_N1 = "// action:pause"; ////
 const char MSG_OCTOPRINT_PAUSED[] PROGMEM_N1 = "// action:paused"; ////
-const char MSG_OCTOPRINT_RESUME[] PROGMEM_N1 = "// action:resume"; ////
+const char MSG_OCTOPRINT_ASK_RESUME[] PROGMEM_N1 = "// action:resume"; ////
 const char MSG_OCTOPRINT_RESUMED[] PROGMEM_N1 = "// action:resumed"; ////
 const char MSG_OCTOPRINT_CANCEL[] PROGMEM_N1 = "// action:cancel"; ////
 const char MSG_FANCHECK_EXTRUDER[] PROGMEM_N1 = "Err: EXTR. FAN ERROR"; ////c=20
