@@ -562,9 +562,16 @@ void servo_init()
   #endif
 }
 
-bool printer_active()
-{
-    return PRINTER_ACTIVE;
+bool __attribute__((noinline)) printer_active() {
+    return IS_SD_PRINTING
+        || usb_timer.running()
+        || isPrintPaused
+        || (custom_message_type == CustomMsg::TempCal)
+        || saved_printing
+        || (lcd_commands_type == LcdCommands::Layer1Cal)
+        || mmu_print_saved
+        || homing_flag
+        || mesh_bed_leveling_flag;
 }
 
 bool fans_check_enabled = true;
@@ -2194,7 +2201,7 @@ bool calibrate_z_auto()
 #ifdef TMC2130
 static void check_Z_crash(void)
 {
-	if (READ(Z_TMC2130_DIAG) != 0) { //Z crash
+	if (!READ(Z_TMC2130_DIAG)) { //Z crash
 		FORCE_HIGH_POWER_END;
 		current_position[Z_AXIS] = 0;
 		plan_set_position_curposXYZE();
@@ -2453,7 +2460,7 @@ void gcode_M105(uint8_t extruder)
     }
 #else
     SERIAL_ERROR_START;
-    SERIAL_ERRORLNRPGM(_i("No thermistors - no temperature"));////MSG_ERR_NO_THERMISTORS
+    SERIAL_ERRORLNRPGM(_n("No thermistors - no temperature"));////MSG_ERR_NO_THERMISTORS
 #endif
 
     SERIAL_PROTOCOLPGM(" @:");
@@ -3657,7 +3664,7 @@ void gcode_M701()
 
         if (!fsensor_oq_result())
         {
-            bool disable = lcd_show_fullscreen_message_yes_no_and_wait_P(_i("Fil. sensor response is poor, disable it?"), false, true);
+            bool disable = lcd_show_fullscreen_message_yes_no_and_wait_P(_n("Fil. sensor response is poor, disable it?"), false, true);
             lcd_update_enable(true);
             lcd_update(2);
             if (disable)
@@ -7520,7 +7527,7 @@ Sigma_Exit:
     #### Usage
 
         M310                                           ; report values
-        M310 [ A ]                                     ; autotune
+        M310 [ A ] [ F ]                               ; autotune
         M310 [ S ]                                     ; set 0=disable 1=enable
         M310 [ I ] [ R ]                               ; set resistance at index
         M310 [ P | C ]                                 ; set power, capacitance
@@ -7538,12 +7545,13 @@ Sigma_Exit:
     - `W` - warning threshold (K/s; default in variant)
     - `T` - ambient temperature correction (K; default in variant)
     - `A` - autotune C+R values
+    - `F` - force model self-test state (0=off 1=on) during autotune using current values
     */
     case 310:
     {
         // parse all parameters
         float P = NAN, C = NAN, R = NAN, E = NAN, W = NAN, T = NAN;
-        int8_t I = -1, S = -1, B = -1, A = -1;
+        int8_t I = -1, S = -1, B = -1, A = -1, F = -1;
         if(code_seen('C')) C = code_value();
         if(code_seen('P')) P = code_value();
         if(code_seen('I')) I = code_value_short();
@@ -7554,6 +7562,7 @@ Sigma_Exit:
         if(code_seen('W')) W = code_value();
         if(code_seen('T')) T = code_value();
         if(code_seen('A')) A = code_value_short();
+        if(code_seen('F')) F = code_value_short();
 
         // report values if nothing has been requested
         if(isnan(C) && isnan(P) && isnan(R) && isnan(E) && isnan(W) && isnan(T) && I < 0 && S < 0 && B < 0 && A < 0) {
@@ -7570,7 +7579,7 @@ Sigma_Exit:
         if(S >= 0) temp_model_set_enabled(S);
 
         // run autotune
-        if(A >= 0) temp_model_autotune(A);
+        if(A >= 0) temp_model_autotune(A, F > 0);
     }
     break;
 #endif
@@ -8947,13 +8956,13 @@ Sigma_Exit:
     ## D70 - Enable low-level temperature model logging for offline simulation
     #### Usage
 
-        D70 [ I ]
+        D70 [ S ]
 
     #### Parameters
-    - `I` - Enable 0-1 (default 0)
+    - `S` - Enable 0-1 (default 0)
     */
     case 70: {
-        if(code_seen('I'))
+        if(code_seen('S'))
             temp_model_log_enable(code_value_short());
         break;
     }
@@ -9371,7 +9380,7 @@ static void handleSafetyTimer()
 #if (EXTRUDERS > 1)
 #error Implemented only for one extruder.
 #endif //(EXTRUDERS > 1)
-    if ((PRINTER_ACTIVE) || (!degTargetBed() && !degTargetHotend(0)) || (!safetytimer_inactive_time))
+    if (printer_active() || (!degTargetBed() && !degTargetHotend(0)) || (!safetytimer_inactive_time))
     {
         safetyTimer.stop();
     }
@@ -9425,7 +9434,7 @@ static uint16_t nFSCheckCount=0;
 	if (mmu_enabled == false)
 	{
 //-//		if (mcode_in_progress != 600) //M600 not in progress
-		if (!PRINTER_ACTIVE) bInhibitFlag=(menu_menu==lcd_menu_show_sensors_state); //Block Filament sensor actions if PRINTER is not active and Support::SensorInfo menu active
+		if (!printer_active()) bInhibitFlag=(menu_menu==lcd_menu_show_sensors_state); //Block Filament sensor actions if PRINTER is not active and Support::SensorInfo menu active
 #ifdef IR_SENSOR_ANALOG
 		bInhibitFlag=bInhibitFlag||bMenuFSDetect; // Block Filament sensor actions if Settings::HWsetup::FSdetect menu active
 #endif // IR_SENSOR_ANALOG
@@ -9703,6 +9712,8 @@ void ThermalStop(bool allow_pause)
         Stopped = true;
         if(allow_pause && (IS_SD_PRINTING || usb_timer.running())) {
             if (!isPrintPaused) {
+                lcd_setalertstatuspgm(_T(MSG_PAUSED_THERMAL_ERROR), LCD_STATUS_CRITICAL);
+
                 // we cannot make a distinction for the host here, the pause must be instantaneous
                 // so we call the lcd_pause_print to save the print state internally. Thermal errors
                 // disable heaters and save the original temperatures to saved_*, which will get
@@ -10929,7 +10940,7 @@ ISR(INT4_vect) {
 	EIMSK &= ~(1 << 4); //disable INT4 interrupt to make sure that this code will be executed just once 
 	SERIAL_ECHOLNPGM("INT4");
     //fire normal uvlo only in case where EEPROM_UVLO is 0 or if IS_SD_PRINTING is 1. 
-     if(PRINTER_ACTIVE && (!(eeprom_read_byte((uint8_t*)EEPROM_UVLO)))) uvlo_();
+     if(printer_active() && (!(eeprom_read_byte((uint8_t*)EEPROM_UVLO)))) uvlo_();
      if(eeprom_read_byte((uint8_t*)EEPROM_UVLO)) uvlo_tiny();
 }
 
@@ -11682,7 +11693,7 @@ void M600_load_filament() {
 
 	if (!fsensor_oq_result())
 	{
-		bool disable = lcd_show_fullscreen_message_yes_no_and_wait_P(_i("Fil. sensor response is poor, disable it?"), false, true);
+		bool disable = lcd_show_fullscreen_message_yes_no_and_wait_P(_n("Fil. sensor response is poor, disable it?"), false, true);
 		lcd_update_enable(true);
 		lcd_update(2);
 		if (disable)

@@ -974,7 +974,7 @@ bool find_bed_induction_sensor_point_z(float minimum_z, uint8_t n_iter, int
 		goto error;
 	}
 #ifdef TMC2130
-	if (READ(Z_TMC2130_DIAG) != 0)
+	if (!READ(Z_TMC2130_DIAG))
 	{
 		//printf_P(PSTR("crash detected 1, current_pos[Z]: %f \n"), current_position[Z_AXIS]);
 		goto error; //crash Z detected
@@ -1011,7 +1011,7 @@ bool find_bed_induction_sensor_point_z(float minimum_z, uint8_t n_iter, int
 			goto error;
 		}
 #ifdef TMC2130
-		if (READ(Z_TMC2130_DIAG) != 0) {
+		if (!READ(Z_TMC2130_DIAG)) {
 			//printf_P(PSTR("crash detected 2, current_pos[Z]: %f \n"), current_position[Z_AXIS]);
 			goto error; //crash Z detected
 		}
@@ -2528,7 +2528,7 @@ BedSkewOffsetDetectionResultType improve_bed_offset_and_skew(int8_t method, int8
     bool endstop_z_enabled = enable_z_endstop(false);
 
 #ifdef MESH_BED_CALIBRATION_SHOW_LCD
-    lcd_display_message_fullscreen_P(_i("Improving bed calibration point"));////MSG_IMPROVE_BED_OFFSET_AND_SKEW_LINE1 c=60
+    lcd_display_message_fullscreen_P(_i("Improving bed calibration point"));////MSG_IMPROVE_BED_OFFSET_AND_SKEW_LINE1 c=20 r=4
 #endif /* MESH_BED_CALIBRATION_SHOW_LCD */
 
     // Collect a matrix of 9x9 points.
@@ -2857,7 +2857,7 @@ bool sample_mesh_and_store_reference()
         homeaxis(Z_AXIS);
 
 #ifdef TMC2130
-		if (!axis_known_position[Z_AXIS] && (READ(Z_TMC2130_DIAG) != 0)) //Z crash
+		if (!axis_known_position[Z_AXIS] && (!READ(Z_TMC2130_DIAG))) //Z crash
 		{
 			kill(_T(MSG_BED_LEVELING_FAILED_POINT_LOW));
 			return false;

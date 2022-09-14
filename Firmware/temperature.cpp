@@ -1759,7 +1759,6 @@ void handle_temp_error()
     case TempErrorType::model:
         if(temp_error_state.assert) {
             if(IsStopped() == false) {
-                lcd_setalertstatuspgm(MSG_PAUSED_THERMAL_ERROR, LCD_STATUS_CRITICAL);
                 SERIAL_ECHOLNPGM("TM: error triggered!");
             }
             ThermalStop(true);
@@ -2315,7 +2314,8 @@ static void check_temp_raw()
 #ifdef TEMP_MODEL
 namespace temp_model {
 
-void model_data::reset(uint8_t heater_pwm, uint8_t fan_pwm, float heater_temp, float ambient_temp)
+void model_data::reset(uint8_t heater_pwm _UNUSED, uint8_t fan_pwm _UNUSED,
+    float heater_temp _UNUSED, float ambient_temp _UNUSED)
 {
     // pre-compute invariant values
     C_i = (TEMP_MGR_INTV / C);
@@ -2323,16 +2323,20 @@ void model_data::reset(uint8_t heater_pwm, uint8_t fan_pwm, float heater_temp, f
     err_s = err * TEMP_MGR_INTV;
 
     // initial values
-    memset(dT_lag_buf, 0, sizeof(dT_lag_buf));
+    for(uint8_t i = 0; i != TEMP_MODEL_LAG_SIZE; ++i)
+        dT_lag_buf[i] = NAN;
     dT_lag_idx = 0;
     dT_err_prev = 0;
-    T_prev = heater_temp;
-
-    // perform one step to initialize the first delta
-    step(heater_pwm, fan_pwm, heater_temp, ambient_temp);
+    T_prev = NAN;
 
     // clear the initialization flag
     flag_bits.uninitialized = false;
+}
+
+static constexpr float iir_mul(const float a, const float b, const float f, const float nanv)
+{
+    const float a_ = !isnan(a) ? a : nanv;
+    return (a_ * (1.f - f)) + (b * f);
 }
 
 void model_data::step(uint8_t heater_pwm, uint8_t fan_pwm, float heater_temp, float ambient_temp)
@@ -2353,13 +2357,13 @@ void model_data::step(uint8_t heater_pwm, uint8_t fan_pwm, float heater_temp, fl
     uint8_t dT_next_idx = (dT_lag_idx == (TEMP_MODEL_LAG_SIZE - 1) ? 0: dT_lag_idx + 1);
     float dT_lag = dT_lag_buf[dT_next_idx];
     float dT_lag_prev = dT_lag_buf[dT_lag_idx];
-    float dT_f = (dT_lag_prev * (1.f - TEMP_MODEL_fS)) + (dT * TEMP_MODEL_fS);
+    float dT_f = iir_mul(dT_lag_prev, dT, TEMP_MODEL_fS, dT);
     dT_lag_buf[dT_next_idx] = dT_f;
     dT_lag_idx = dT_next_idx;
 
     // calculate and filter dT_err
     float dT_err = (cur_heater_temp - T_prev) - dT_lag;
-    float dT_err_f = (dT_err_prev * (1.f - TEMP_MODEL_fE)) + (dT_err * TEMP_MODEL_fE);
+    float dT_err_f = iir_mul(dT_err_prev, dT_err, TEMP_MODEL_fE, 0.);
     T_prev = cur_heater_temp;
     dT_err_prev = dT_err_f;
 
@@ -2435,7 +2439,7 @@ void handle_warning()
     if(warning_state.assert) {
         if (first) {
             if(warn_beep) {
-                lcd_setalertstatuspgm(MSG_THERMAL_ANOMALY, LCD_STATUS_INFO);
+                lcd_setalertstatuspgm(_T(MSG_THERMAL_ANOMALY), LCD_STATUS_INFO);
                 WRITE(BEEPER, HIGH);
             }
         } else {
@@ -2485,7 +2489,7 @@ void log_isr()
     if(!log_buf.enabled) return;
 
     uint32_t stamp = _millis();
-    uint8_t delta_ms = stamp - log_buf.entry.stamp - (TEMP_MGR_INTV * 1000);
+    uint8_t delta_ms = stamp - log_buf.entry.stamp - (uint32_t)(TEMP_MGR_INTV * 1000);
     log_buf.entry.stamp = stamp;
 
     ++log_buf.entry.counter;
@@ -2497,6 +2501,13 @@ void log_isr()
 #endif
 
 } // namespace temp_model
+
+static void temp_model_reset_enabled(bool enabled)
+{
+    TempMgrGuard temp_mgr_guard;
+    temp_model::enabled = enabled;
+    temp_model::data.flag_bits.uninitialized = true;
+}
 
 void temp_model_set_enabled(bool enabled)
 {
@@ -2562,8 +2573,9 @@ void temp_model_reset_settings()
     TempMgrGuard temp_mgr_guard;
 
     temp_model::data.P = TEMP_MODEL_P;
-    temp_model::data.C = NAN;
-    for(uint8_t i = 0; i != TEMP_MODEL_R_SIZE; ++i)
+    temp_model::data.C = TEMP_MODEL_C;
+    temp_model::data.R[0] = TEMP_MODEL_R;
+    for(uint8_t i = 1; i != TEMP_MODEL_R_SIZE; ++i)
         temp_model::data.R[i] = NAN;
     temp_model::data.Ta_corr = TEMP_MODEL_Ta_corr;
     temp_model::data.warn = TEMP_MODEL_W;
@@ -2698,11 +2710,16 @@ static float cost_fn(uint16_t samples, float* const var, float v, uint8_t fan_pw
     *var = v;
     temp_model::data.reset(rec_buffer[0].pwm, fan_pwm, rec_buffer[0].temp, ambient);
     float err = 0;
+    uint16_t cnt = 0;
     for(uint16_t i = 1; i < samples; ++i) {
         temp_model::data.step(rec_buffer[i].pwm, fan_pwm, rec_buffer[i].temp, ambient);
-        err += fabsf(temp_model::data.dT_err_prev);
+        float err_v = temp_model::data.dT_err_prev;
+        if(!isnan(err_v)) {
+            err += err_v * err_v;
+            ++cnt;
+        }
     }
-    return (err / (samples - 1));
+    return cnt ? (err / cnt) : NAN;
 }
 
 constexpr float GOLDEN_RATIO = 0.6180339887498949;
@@ -2719,6 +2736,11 @@ static float estimate(uint16_t samples,
     float thr, uint16_t max_itr,
     uint8_t fan_pwm, float ambient)
 {
+    // during estimation we alter the model values without an extra copy to conserve memory
+    // so we cannot keep the main checker active until a value has been found
+    bool was_enabled = temp_model::enabled;
+    temp_model_reset_enabled(false);
+
     float orig = *var;
     float e = NAN;
     float points[2];
@@ -2742,12 +2764,14 @@ static float estimate(uint16_t samples,
             }
 
             *var = x;
+            temp_model_reset_enabled(was_enabled);
             return e;
         }
     }
 
     SERIAL_ECHOLNPGM("TM estimation did not converge");
     *var = orig;
+    temp_model_reset_enabled(was_enabled);
     return NAN;
 }
 
@@ -2769,15 +2793,15 @@ static bool autotune(int16_t cal_temp)
             wait(10000);
         }
 
-        // we need a valid R value for the initial C guess
-        if(isnan(temp_model::data.R[0]))
-            temp_model::data.R[0] = TEMP_MODEL_Rh;
-
         printf_P(PSTR("TM: %S C estimation\n"), verb);
         target_temperature[0] = cal_temp;
         samples = record();
         if(temp_error_state.v || !samples)
             return true;
+
+        // we need a high R value for the initial C guess
+        if(isnan(temp_model::data.R[0]))
+            temp_model::data.R[0] = TEMP_MODEL_Rh;
 
         e = estimate(samples, &temp_model::data.C,
             TEMP_MODEL_Cl, TEMP_MODEL_Ch, TEMP_MODEL_C_thr, TEMP_MODEL_C_itr,
@@ -2847,7 +2871,7 @@ static bool autotune(int16_t cal_temp)
 
 } // namespace temp_model_cal
 
-void temp_model_autotune(int16_t temp)
+void temp_model_autotune(int16_t temp, bool selftest)
 {
     if(moves_planned() || printer_active()) {
         SERIAL_ECHOLNPGM("TM: printer needs to be idle for calibration");
@@ -2857,22 +2881,22 @@ void temp_model_autotune(int16_t temp)
     // lockout the printer during calibration
     KEEPALIVE_STATE(IN_PROCESS);
     menu_set_block(MENU_BLOCK_TEMP_MODEL_AUTOTUNE);
-    lcd_setstatuspgm(_i("Temp. model autotune"));
+    lcd_setstatuspgm(_i("Temp. model autotune")); ////MSG_TEMP_MODEL_AUTOTUNE c=20
     lcd_return_to_status();
 
-    // disable the model checking during self-calibration
+    // set the model checking state during self-calibration
     bool was_enabled = temp_model::enabled;
-    temp_model_set_enabled(false);
+    temp_model_reset_enabled(selftest);
 
     SERIAL_ECHOLNPGM("TM: autotune start");
     bool err = temp_model_cal::autotune(temp > 0 ? temp : TEMP_MODEL_CAL_Th);
 
     // always reset temperature
-    target_temperature[0] = 0;
+    disable_heater();
 
     if(err) {
         SERIAL_ECHOLNPGM("TM: autotune failed");
-        lcd_setstatuspgm(_i("TM autotune failed"));
+        lcd_setstatuspgm(_i("TM autotune failed")); ////MSG_TM_AUTOTUNE_FAILED c=20
         if(temp_error_state.v)
             temp_model_cal::set_fan_speed(255);
     } else {
