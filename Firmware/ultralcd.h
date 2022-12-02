@@ -114,6 +114,7 @@ enum class LcdCommands : uint_least8_t
 #ifdef TEMP_MODEL
     TempModel,
 #endif //TEMP_MODEL
+    NozzleCNG,
 };
 
 extern LcdCommands lcd_commands_type;
@@ -224,6 +225,9 @@ enum class WizState : uint8_t
     Selftest,       //!< self test
     Xyz,            //!< xyz calibration
     Z,              //!< z calibration
+#ifdef TEMP_MODEL
+    TempModel,      //!< Temp model calibration
+#endif //TEMP_MODEL
     IsFil,          //!< Is filament loaded? First step of 1st layer calibration
     PreheatPla,     //!< waiting for preheat nozzle for PLA
     Preheat,        //!< Preheat for any material
