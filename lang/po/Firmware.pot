@@ -307,6 +307,11 @@ msgstr ""
 msgid "Checks"
 msgstr ""
 
+#. MSG_TM_ACK_ERROR c=18
+#: ../../Firmware/messages.cpp:172 ../../Firmware/ultralcd.cpp:5490
+msgid "Clear TM error"
+msgstr ""
+
 #. MSG_NOT_COLOR c=19
 #: ../../Firmware/ultralcd.cpp:2237
 msgid "Color not correct"
@@ -722,8 +727,8 @@ msgid "Hotend fan:"
 msgstr ""
 
 #. MSG_WIZARD_XYZ_CAL c=20 r=8
-#: ../../Firmware/ultralcd.cpp:4094
-msgid "I will run xyz calibration now. It will take approx. 12 mins."
+#: ../../Firmware/ultralcd.cpp:4030
+msgid "I will run xyz calibration now. It will take up to 24 mins."
 msgstr ""
 
 #. MSG_WIZARD_Z_CAL c=20 r=8

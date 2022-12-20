@@ -835,7 +835,7 @@ void lcd_status_screen()                          // NOT static due to using ins
 	}
 }
 
-void print_stop();
+void lcd_print_stop_finish();
 
 void lcd_commands()
 {
@@ -853,7 +853,7 @@ void lcd_commands()
             lcd_setstatuspgm(_T(MSG_PRINT_ABORTED));
             lcd_commands_type = LcdCommands::Idle;
             lcd_commands_step = 0;
-            print_stop();
+            lcd_print_stop_finish();
         }
     }
 
@@ -1041,27 +1041,42 @@ void lcd_commands()
 			lcd_commands_type = LcdCommands::Idle;
 		}
 	}
+
 #ifdef TEMP_MODEL
-    if (lcd_commands_type == LcdCommands::TempModel) {
-        if (lcd_commands_step == 0) {
+    if (lcd_commands_type == LcdCommands::TempModel && cmd_buffer_empty())
+    {
+        switch (lcd_commands_step)
+        {
+        case 0:
             lcd_commands_step = 3;
-        }
-        if (lcd_commands_step == 3) {
-            enquecommand_P(PSTR("M310 A F0"));
+            [[fallthrough]];
+
+        case 3:
+            enquecommand_P(PSTR("M310 A F1"));
             lcd_commands_step = 2;
-        }
-        if (lcd_commands_step ==2 && temp_model_valid()) {
-            enquecommand_P(PSTR("M310 S1"));
+            break;
+
+        case 2:
+            if (temp_model_autotune_result())
+                enquecommand_P(PSTR("M500"));
             lcd_commands_step = 1;
-        }
-        //if (lcd_commands_step == 1 && calibrated()) {
-        if (lcd_commands_step == 1 && temp_model_valid()) {
+            break;
+
+        case 1:
             lcd_commands_step = 0;
             lcd_commands_type = LcdCommands::Idle;
-            enquecommand_P(PSTR("M500"));
-            if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE) == 1) {
-                lcd_wizard(WizState::IsFil);
+
+            if (temp_model_autotune_result()) {
+                if (calibration_status() == CALIBRATION_STATUS_TEMP_MODEL_CALIBRATION) {
+                    // move to the next calibration step if not fully calibrated
+                    calibration_status_store(CALIBRATION_STATUS_LIVE_ADJUST);
+                }
+                if ((eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE) == 1)) {
+                    // successful: resume the wizard
+                    lcd_wizard(WizState::IsFil);
+                }
             }
+            break;
         }
     }
 #endif //TEMP_MODEL
@@ -1070,6 +1085,9 @@ void lcd_commands()
 	{
         if (!blocks_queued() && cmd_buffer_empty() && !saved_printing)
         {
+#ifdef TEMP_MODEL
+            static bool was_enabled;
+#endif //TEMP_MODEL
             switch(lcd_commands_step)
             {
             case 0:
@@ -1084,7 +1102,7 @@ void lcd_commands()
                 enquecommand_P(PSTR("G1 X125 Y10 Z150 F1000"));
                 enquecommand_P(PSTR("M109 S280"));
 #ifdef TEMP_MODEL
-                //enquecommand_P(PSTR("M310 S0"));
+                was_enabled = temp_model_enabled();
                 temp_model_set_enabled(false);
 #endif //TEMP_MODEL
                 lcd_commands_step = 2;
@@ -1098,13 +1116,11 @@ void lcd_commands()
                 enquecommand_P(PSTR("M84 XY"));
                 lcd_update_enabled = false; //hack to avoid lcd_update recursion.
                 if (lcd_show_fullscreen_message_yes_no_and_wait_P(_T(MSG_NOZZLE_CNG_CHANGED), false, true)) {
+                    setAllTargetHotends(0);
 #ifdef TEMP_MODEL
-                //enquecommand_P(PSTR("M310 S1"));
-                temp_model_set_enabled(true);
+                    temp_model_set_enabled(was_enabled);
 #endif //TEMP_MODEL
-                //enquecommand_P(PSTR("M104 S0"));
-                setTargetHotendSafe(0,0);
-                lcd_commands_step = 1;
+                    lcd_commands_step = 1;
                 }
                 lcd_update_enabled = true;
                 break;
@@ -4154,7 +4170,7 @@ void lcd_wizard(WizState state)
 			else end = true;
 			break;
 		case S::Xyz:
-			lcd_show_fullscreen_message_and_wait_P(_i("I will run xyz calibration now. It will take approx. 12 mins."));////MSG_WIZARD_XYZ_CAL c=20 r=8
+			lcd_show_fullscreen_message_and_wait_P(_i("I will run xyz calibration now. It will take up to 24 mins."));////MSG_WIZARD_XYZ_CAL c=20 r=8
 			wizard_event = gcode_M45(false, 0);
 			if (wizard_event) {
 #ifdef TEMP_MODEL
@@ -4271,10 +4287,6 @@ void lcd_wizard(WizState state)
 	case S::Z: //z cal.
 		msg = _T(MSG_WIZARD_CALIBRATION_FAILED);
 		break;
-#ifdef TEMP_MODEL
-	case S::TempModel: //Temp model calibration
-		break;
-#endif //TEMP_MODEL
 	case S::Finish: //we are finished
 		msg = _T(MSG_WIZARD_DONE);
 		lcd_reset_alert_level();
@@ -4284,6 +4296,9 @@ void lcd_wizard(WizState state)
     case S::Preheat:
     case S::Lay1CalCold:
     case S::Lay1CalHot:
+#ifdef TEMP_MODEL
+	case S::TempModel: // exiting for calibration
+#endif //TEMP_MODEL
         break;
 	default:
 		msg = _T(MSG_WIZARD_QUIT);
@@ -5608,7 +5623,7 @@ static void lcd_main_menu()
 
     if ( moves_planned() || printer_active() ) {
         MENU_ITEM_SUBMENU_P(_i("Tune"), lcd_tune_menu);////MSG_TUNE c=18
-    } else {
+    } else if (!Stopped) {
         MENU_ITEM_SUBMENU_P(_i("Preheat"), lcd_preheat_menu);////MSG_PREHEAT c=18
     }
 
@@ -5637,6 +5652,11 @@ static void lcd_main_menu()
     if((IS_SD_PRINTING || usb_timer.running() || isPrintPaused) && (custom_message_type != CustomMsg::MeshBedLeveling)) {
         MENU_ITEM_SUBMENU_P(_T(MSG_STOP_PRINT), lcd_sdcard_stop);
     }
+#ifdef TEMP_MODEL
+    else if(Stopped) {
+        MENU_ITEM_SUBMENU_P(_T(MSG_TM_ACK_ERROR), lcd_print_stop);
+    }
+#endif
 #ifdef SDSUPPORT //!@todo SDSUPPORT undefined creates several issues in source code
     if (card.cardOK || lcd_commands_type == LcdCommands::Layer1Cal) {
         if (!card.isFileOpen()) {
@@ -5667,7 +5687,7 @@ static void lcd_main_menu()
         }
     }
 
-    if ( ! ( IS_SD_PRINTING || usb_timer.running() || (lcd_commands_type == LcdCommands::Layer1Cal) ) ) {
+    if ( ! ( IS_SD_PRINTING || usb_timer.running() || (lcd_commands_type == LcdCommands::Layer1Cal || Stopped) ) ) {
         if (mmu_enabled) {
             MENU_ITEM_SUBMENU_P(_T(MSG_LOAD_FILAMENT), mmu_load_filament_menu);
             MENU_ITEM_SUBMENU_P(_i("Load to nozzle"), mmu_load_to_nozzle_menu);////MSG_LOAD_TO_NOZZLE c=18
@@ -6035,7 +6055,7 @@ static void lcd_sd_updir()
 }
 
 // continue stopping the print from the main loop after lcd_print_stop() is called
-void print_stop()
+void lcd_print_stop_finish()
 {
     // save printing time
     stoptime = _millis();
@@ -6067,11 +6087,11 @@ void print_stop()
     axis_relative_modes = E_AXIS_MASK; //XYZ absolute, E relative
 }
 
-void lcd_print_stop()
+void print_stop(bool interactive)
 {
-    // UnconditionalStop() will internally cause planner_abort_hard(), meaning we _cannot_ plan
-    // any more move in this call! Any further move must happen inside print_stop(), which is called
-    // by the main loop one iteration later.
+    // UnconditionalStop() will internally cause planner_abort_hard(), meaning we _cannot_ plan any
+    // more move in this call! Any further move must happen inside lcd_print_stop_finish(), which is
+    // called by the main loop one iteration later.
     UnconditionalStop();
 
     if (!card.sdprinting) {
@@ -6086,9 +6106,19 @@ void lcd_print_stop()
     pause_time = 0;
     isPrintPaused = false;
 
+    if (interactive) {
+        // acknowledged by the user from the LCD: resume processing USB commands again
+        Stopped = false;
+    }
+
     // return to status is required to continue processing in the main loop!
     lcd_commands_type = LcdCommands::StopPrint;
     lcd_return_to_status();
+}
+
+void lcd_print_stop()
+{
+    print_stop(true);
 }
 
 #ifdef TEMP_MODEL
@@ -6996,11 +7026,7 @@ static bool lcd_selfcheck_endstops()
 
 static bool lcd_selfcheck_check_heater(bool _isbed)
 {
-	uint8_t _counter = 0;
 	uint8_t _progress = 0;
-	bool _stepresult = false;
-	bool _docycle = true;
-
 	int _checked_snapshot = (_isbed) ? degBed() : degHotend(0);
 	int _opposite_snapshot = (_isbed) ? degHotend(0) : degBed();
 	uint8_t _cycles = (_isbed) ? 180 : 60; //~ 90s / 30s
@@ -7010,13 +7036,13 @@ static bool lcd_selfcheck_check_heater(bool _isbed)
 	manage_heater();
 	manage_inactivity(true);
 
-	do {
-		_counter++;
-		_docycle = (_counter < _cycles) ? true : false;
-
+    for(uint8_t _counter = 0; _counter < _cycles && !Stopped; ++_counter)
+    {
 		manage_heater();
 		manage_inactivity(true);
-		_progress = (_isbed) ? lcd_selftest_screen(TestScreen::Bed, _progress, 2, false, 400) : lcd_selftest_screen(TestScreen::Hotend, _progress, 2, false, 400);
+		_progress = (_isbed?
+			lcd_selftest_screen(TestScreen::Bed, _progress, 2, false, 400) :
+			lcd_selftest_screen(TestScreen::Hotend, _progress, 2, false, 400));
 		/*if (_isbed) {
 			MYSERIAL.print("Bed temp:");
 			MYSERIAL.println(degBed());
@@ -7026,8 +7052,7 @@ static bool lcd_selfcheck_check_heater(bool _isbed)
 			MYSERIAL.println(degHotend(0));
 		}*/
 		if(_counter%5 == 0) serialecho_temperatures(); //show temperatures once in two seconds
-
-	} while (_docycle); 
+	}
 
 	target_temperature[0] = 0;
 	target_temperature_bed = 0;
@@ -7043,21 +7068,26 @@ static bool lcd_selfcheck_check_heater(bool _isbed)
 	MYSERIAL.println(_opposite_result);
 	*/
 
-	if (_opposite_result < ((_isbed) ? 30 : 9))
-	{
-		if (_checked_result >= ((_isbed) ? 9 : 30))
-		{
-			_stepresult = true;
-		}
-		else
-		{
-			lcd_selftest_error(TestError::Heater, "", "");
-		}
-	}
-	else
-	{
-		lcd_selftest_error(TestError::Bed, "", "");
-	}
+    bool _stepresult = false;
+    if (Stopped)
+    {
+        // thermal error occurred while heating the nozzle
+        lcd_selftest_error(TestError::Heater, "", "");
+    }
+    else
+    {
+        if (_opposite_result < ((_isbed) ? 30 : 9))
+        {
+            if (_checked_result >= ((_isbed) ? 9 : 30))
+                _stepresult = true;
+            else
+                lcd_selftest_error(TestError::Heater, "", "");
+        }
+        else
+        {
+            lcd_selftest_error(TestError::Bed, "", "");
+        }
+    }
 
 	manage_heater();
 	manage_inactivity(true);
@@ -7692,13 +7722,13 @@ void lcd_setalertstatus_(const char* message, uint8_t severity, bool progmem)
         bool same = !(progmem?
             strcmp_P(lcd_status_message, message):
             strcmp(lcd_status_message, message));
-        lcd_updatestatus(message, progmem);
         lcd_status_message_timeout.start();
         lcd_status_message_level = severity;
         custom_message_type = CustomMsg::Status;
         custom_message_state = 0;
         if (!same) {
             // do not kick the user out of the menus if the message is unchanged
+            lcd_updatestatus(message, progmem);
             lcd_return_to_status();
         }
     }
@@ -7730,7 +7760,7 @@ void menu_lcd_longpress_func(void)
     // start LCD inactivity timer
     lcd_timeoutToStatus.start();
     backlight_wake();
-    if (homing_flag || mesh_bed_leveling_flag || menu_menu == lcd_babystep_z || menu_menu == lcd_move_z || menu_block_mask != MENU_BLOCK_NONE)
+    if (homing_flag || mesh_bed_leveling_flag || menu_menu == lcd_babystep_z || menu_menu == lcd_move_z || menu_block_mask != MENU_BLOCK_NONE || Stopped)
     {
         // disable longpress during re-entry, while homing, calibration or if a serious error
         lcd_quick_feedback();
