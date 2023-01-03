@@ -69,7 +69,12 @@ void lcd_crash_detect_enable();
 void lcd_crash_detect_disable();
 #endif
 
-extern const char* lcd_display_message_fullscreen_P(const char *msg, uint8_t &nlines);
+enum LCDButtonChoice : int_fast8_t {
+    LCD_LEFT_BUTTON_CHOICE = 1,
+    LCD_MIDDLE_BUTTON_CHOICE = 0,
+    LCD_BUTTON_TIMEOUT      = -1,
+};
+
 extern const char* lcd_display_message_fullscreen_P(const char *msg);
 
 extern void lcd_return_to_status();
@@ -230,15 +235,14 @@ enum class WizState : uint8_t
     TempModel,      //!< Temp model calibration
 #endif //TEMP_MODEL
     IsFil,          //!< Is filament loaded? First step of 1st layer calibration
-    PreheatPla,     //!< waiting for preheat nozzle for PLA
     Preheat,        //!< Preheat for any material
     LoadFilCold,    //!< Load filament for MMU
     LoadFilHot,     //!< Load filament without MMU
-    IsPla,          //!< Is PLA filament?
     Lay1CalCold,    //!< First layer calibration, temperature not selected yet
     Lay1CalHot,     //!< First layer calibration, temperature already selected
     RepeatLay1Cal,  //!< Repeat first layer calibration?
-    Finish,         //!< Deactivate wizard
+    Finish,         //!< Deactivate wizard (success)
+    Failed,         //!< Deactivate wizard (failure)
 };
 
 void lcd_wizard(WizState state);

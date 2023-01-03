@@ -758,9 +758,10 @@ static void factory_reset(char level)
 	case 3: // Level 3: Preparation after being serviced
 		// Force language selection at the next boot up.
 		lang_reset();
-		// Force the "Follow calibration flow" message at the next boot up.
-		calibration_status_store(CALIBRATION_STATUS_Z_CALIBRATION);
-		eeprom_write_byte((uint8_t*)EEPROM_WIZARD_ACTIVE, 2); //run wizard
+
+		// Force the wizard in "Follow calibration flow" mode at the next boot up
+		calibration_status_clear(CALIBRATION_FORCE_PREP);
+		eeprom_write_byte((uint8_t*)EEPROM_WIZARD_ACTIVE, 2);
 		farm_disable();
 
 #ifdef FILAMENT_SENSOR
@@ -1266,11 +1267,14 @@ void setup()
     temp_mgr_init();
 
 #ifdef EXTRUDER_ALTFAN_DETECT
-	SERIAL_ECHORPGM(_n("Hotend fan type: "));
-	if (extruder_altfan_detect())
-		SERIAL_ECHOLNRPGM(PSTR("ALTFAN"));
-	else
-		SERIAL_ECHOLNRPGM(PSTR("NOCTUA"));
+    if (eeprom_read_byte((uint8_t*)EEPROM_ALTFAN_OVERRIDE) == EEPROM_EMPTY_VALUE) {
+        eeprom_update_byte((uint8_t*)EEPROM_ALTFAN_OVERRIDE, 0);
+        SERIAL_ECHORPGM(_n("Hotend fan type: "));
+        if (extruder_altfan_detect())
+            SERIAL_ECHOLNRPGM(PSTR("ALTFAN"));
+        else
+            SERIAL_ECHOLNRPGM(PSTR("NOCTUA"));
+    }
 #endif //EXTRUDER_ALTFAN_DETECT
 
 	plan_init();  // Initialize planner;
@@ -1535,55 +1539,64 @@ void setup()
 	  lcd_show_fullscreen_message_and_wait_P(_i("Old settings found. Default PID, Esteps etc. will be set.")); //if EEPROM version or printer type was changed, inform user that default setting were loaded////MSG_DEFAULT_SETTINGS_LOADED c=20 r=6
 	  Config_StoreSettings();
   }
-  if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE) >= 1) {
-	  lcd_wizard(WizState::Run);
-  }
-  if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE) == 0) { //dont show calibration status messages if wizard is currently active
-	  if (calibration_status() == CALIBRATION_STATUS_ASSEMBLED ||
-		  calibration_status() == CALIBRATION_STATUS_UNKNOWN || 
-		  calibration_status() == CALIBRATION_STATUS_XYZ_CALIBRATION) {
-		  // Reset the babystepping values, so the printer will not move the Z axis up when the babystepping is enabled.
-            eeprom_update_word(reinterpret_cast<uint16_t *>(&(EEPROM_Sheets_base->s[(eeprom_read_byte(&(EEPROM_Sheets_base->active_sheet)))].z_offset)),0);
-		  // Show the message.
-		  lcd_show_fullscreen_message_and_wait_P(_T(MSG_FOLLOW_CALIBRATION_FLOW));
-	  }
-#ifdef TEMP_MODEL
-	  else if (calibration_status() == CALIBRATION_STATUS_TEMP_MODEL_CALIBRATION) {
-		  lcd_show_fullscreen_message_and_wait_P(_T(MSG_TM_NOT_CAL));
-		  lcd_update_enable(true);
-	  }
-#endif //TEMP_MODEL
-	  else if (calibration_status() == CALIBRATION_STATUS_LIVE_ADJUST) {
-		  // Show the message.
-		  lcd_show_fullscreen_message_and_wait_P(_T(MSG_BABYSTEP_Z_NOT_SET));
-		  lcd_update_enable(true);
-	  }
-	  else if (calibration_status() == CALIBRATION_STATUS_CALIBRATED && eeprom_read_byte((unsigned char *)EEPROM_TEMP_CAL_ACTIVE) && calibration_status_pinda() == false) {
-		  //lcd_show_fullscreen_message_and_wait_P(_i("Temperature calibration has not been run yet"));////MSG_PINDA_NOT_CALIBRATED c=20 r=4
-		  lcd_update_enable(true);
-	  }
-	  else if (calibration_status() == CALIBRATION_STATUS_Z_CALIBRATION) {
-		  // Show the message.
-		  lcd_show_fullscreen_message_and_wait_P(_T(MSG_FOLLOW_Z_CALIBRATION_FLOW));
-	  }
-  }
 
-#if !defined (DEBUG_DISABLE_FORCE_SELFTEST) && defined (TMC2130)
-  if (force_selftest_if_fw_version() && calibration_status() < CALIBRATION_STATUS_ASSEMBLED) {
-	  lcd_show_fullscreen_message_and_wait_P(_i("Selftest will be run to calibrate accurate sensorless rehoming."));////MSG_FORCE_SELFTEST c=20 r=8
-	  update_current_firmware_version_to_eeprom();
-	  lcd_selftest();
+  // handle FW and calibration status upgrade
+  bool run_wizard = false;
+  if (calibration_status_get(CALIBRATION_STATUS_UNKNOWN)) {
+      CalibrationStatus calibration_status = 0;
+      if (eeprom_read_byte((uint8_t*)EEPROM_CALIBRATION_STATUS_V1) == 1) {
+          // calibrated printer upgraded from FW<3.12
+          calibration_status |= (CALIBRATION_STATUS_SELFTEST | CALIBRATION_STATUS_XYZ | CALIBRATION_STATUS_Z | CALIBRATION_STATUS_LIVE_ADJUST);
+
+          static const uint16_t v3_2_0_4[] PROGMEM = {3, 2, 0, 4};
+          if (eeprom_fw_version_older_than_p(v3_2_0_4)) {
+              // printer upgraded from FW<3.2.0.4 and requires re-running selftest
+              lcd_show_fullscreen_message_and_wait_P(_i("Selftest will be run to calibrate accurate sensorless rehoming."));////MSG_FORCE_SELFTEST c=20 r=8
+              calibration_status &= ~CALIBRATION_STATUS_SELFTEST;
+          }
+      }
+      eeprom_update_byte((uint8_t*)EEPROM_CALIBRATION_STATUS_V2, calibration_status);
   }
-#endif //TMC2130 && !DEBUG_DISABLE_FORCE_SELFTEST
+  if (eeprom_fw_version_older_than_p(FW_VERSION_NR)) {
+      if (!calibration_status_get(CALIBRATION_WIZARD_STEPS)) {
+          // we just did a FW upgrade and some (new) wizard step is missing: resume the wizard
+          run_wizard = true;
+      }
+  }
+  update_current_firmware_version_to_eeprom();
+
+  if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE)) {
+      // first time run of wizard or service prep
+      lcd_wizard(WizState::Run);
+  }
+  else if (run_wizard) {
+      // some wizard steps required by the upgrade checks
+      lcd_wizard(WizState::Restore);
+  }
+  else {
+      if (!calibration_status_get(CALIBRATION_STATUS_SELFTEST)) {
+          // aborted or missing wizard: show a single warning
+          lcd_show_fullscreen_message_and_wait_P(_T(MSG_FOLLOW_CALIBRATION_FLOW));
+      }
+      else if (!calibration_status_get(CALIBRATION_STATUS_Z)) {
+          // wizard reset after service prep
+          lcd_show_fullscreen_message_and_wait_P(_T(MSG_FOLLOW_Z_CALIBRATION_FLOW));
+      } else {
+          // warn about other important steps individually
+          if (!calibration_status_get(CALIBRATION_STATUS_LIVE_ADJUST))
+              lcd_show_fullscreen_message_and_wait_P(_T(MSG_BABYSTEP_Z_NOT_SET));
+#ifdef TEMP_MODEL
+          if (!calibration_status_get(CALIBRATION_STATUS_TEMP_MODEL))
+              lcd_show_fullscreen_message_and_wait_P(_T(MSG_TM_NOT_CAL));
+#endif //TEMP_MODEL
+      }
+  }
 
   KEEPALIVE_STATE(IN_PROCESS);
 #endif //DEBUG_DISABLE_STARTMSGS
   lcd_update_enable(true);
   lcd_clear();
   lcd_update(2);
-  // Store the currently running firmware into an eeprom,
-  // so the next time the firmware gets updated, it will know from which version it has been updated.
-  update_current_firmware_version_to_eeprom();
 
 #ifdef TMC2130
   	tmc2130_home_origin[X_AXIS] = eeprom_read_byte((uint8_t*)EEPROM_TMC2130_HOME_X_ORIGIN);
@@ -2873,7 +2886,7 @@ static void gcode_G80()
         run = true;
         repeatcommand_front(); // repeat G80 with all its parameters
         enquecommand_front_P(G28W0);
-        break;
+        return;
     }
     run = false;
 #endif //PINDA_THERMISTOR
@@ -3360,20 +3373,16 @@ bool gcode_M45(bool onlyZ, int8_t verbosity_level)
 				bool result = sample_mesh_and_store_reference();
 				if (result)
 				{
-                    if (calibration_status() == CALIBRATION_STATUS_Z_CALIBRATION)
-                    {
-                        // Shipped, the nozzle height has been set already. The user can start printing now.
-                        calibration_status_store(CALIBRATION_STATUS_CALIBRATED);
-                    }
-                    final_result = true;
-                    // babystep_apply();
+					calibration_status_set(CALIBRATION_STATUS_Z);
+					final_result = true;
 				}
 			}
 			else
 			{
 				// Reset the baby step value and the baby step applied flag.
-				calibration_status_store(CALIBRATION_STATUS_XYZ_CALIBRATION);
-                    eeprom_update_word(reinterpret_cast<uint16_t *>(&(EEPROM_Sheets_base->s[(eeprom_read_byte(&(EEPROM_Sheets_base->active_sheet)))].z_offset)),0);
+				calibration_status_clear(CALIBRATION_STATUS_LIVE_ADJUST);
+				eeprom_update_word(reinterpret_cast<uint16_t *>(&(EEPROM_Sheets_base->s[(eeprom_read_byte(&(EEPROM_Sheets_base->active_sheet)))].z_offset)),0);
+
 				// Complete XYZ calibration.
 				uint8_t point_too_far_mask = 0;
 				BedSkewOffsetDetectionResultType result = find_bed_offset_and_skew(verbosity_level, point_too_far_mask);
@@ -3412,14 +3421,10 @@ bool gcode_M45(bool onlyZ, int8_t verbosity_level)
 				lcd_bed_calibration_show_result(result, point_too_far_mask);
 				if (result >= 0)
 				{
-#ifdef TEMP_MODEL
-					calibration_status_store(CALIBRATION_STATUS_TEMP_MODEL_CALIBRATION);
-					if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE) != 1) lcd_show_fullscreen_message_and_wait_P(_T(MSG_TM_NOT_CAL));
-#else
 					// Calibration valid, the machine should be able to print. Advise the user to run the V2Calibration.gcode.
-					calibration_status_store(CALIBRATION_STATUS_LIVE_ADJUST);
-					if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE) != 1) lcd_show_fullscreen_message_and_wait_P(_T(MSG_BABYSTEP_Z_NOT_SET));
-#endif //TEMP_MODEL
+					calibration_status_set(CALIBRATION_STATUS_XYZ | CALIBRATION_STATUS_Z);
+					if (!eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE))
+						lcd_show_fullscreen_message_and_wait_P(_T(MSG_BABYSTEP_Z_NOT_SET));
 					final_result = true;
 				}
 			}
@@ -4877,7 +4882,7 @@ eeprom_update_word((uint16_t*)EEPROM_NOZZLE_DIAMETER_uM,0xFFFF);
             break;
         }
 
-        if (calibration_status() >= CALIBRATION_STATUS_XYZ_CALIBRATION) {
+        if (!calibration_status_get(CALIBRATION_STATUS_XYZ)) {
             //we need to know accurate position of first calibration point
             //if xyz calibration was not performed yet, interrupt temperature calibration and inform user that xyz cal. is needed
             lcd_show_fullscreen_message_and_wait_P(_i("Please run XYZ calibration first.")); ////MSG_RUN_XYZ c=20 r=4
@@ -5258,7 +5263,7 @@ eeprom_update_word((uint16_t*)EEPROM_NOZZLE_DIAMETER_uM,0xFFFF);
         (Prusa3D specific)
         */
         case 86:
-            calibration_status_store(CALIBRATION_STATUS_LIVE_ADJUST);
+            calibration_status_clear(CALIBRATION_STATUS_LIVE_ADJUST);
             break;
            
 
@@ -5269,7 +5274,7 @@ eeprom_update_word((uint16_t*)EEPROM_NOZZLE_DIAMETER_uM,0xFFFF);
         (Prusa3D specific)
         */
         case 87:
-			calibration_status_store(CALIBRATION_STATUS_CALIBRATED);
+            calibration_status_set(CALIBRATION_STATUS_LIVE_ADJUST);
             break;
 
         /*!
@@ -5673,12 +5678,14 @@ eeprom_update_word((uint16_t*)EEPROM_NOZZLE_DIAMETER_uM,0xFFFF);
     */
     case 44: // M44: Prusa3D: Reset the bed skew and offset calibration.
 
-		// Reset the baby step value and the baby step applied flag.
-		calibration_status_store(CALIBRATION_STATUS_ASSEMBLED);
-          eeprom_update_word(reinterpret_cast<uint16_t *>(&(EEPROM_Sheets_base->s[(eeprom_read_byte(&(EEPROM_Sheets_base->active_sheet)))].z_offset)),0);
+        // Reset the baby step value and the baby step applied flag.
+        calibration_status_clear(CALIBRATION_STATUS_LIVE_ADJUST);
+        eeprom_update_word(reinterpret_cast<uint16_t *>(&(EEPROM_Sheets_base->s[(eeprom_read_byte(&(EEPROM_Sheets_base->active_sheet)))].z_offset)),0);
 
         // Reset the skew and offset in both RAM and EEPROM.
+        calibration_status_clear(CALIBRATION_STATUS_XYZ);
         reset_bed_offset_and_skew();
+
         // Reset world2machine_rotation_and_skew and world2machine_shift, therefore
         // the planner will not perform any adjustments in the XY plane. 
         // Wait for the motors to stop and update the current position with the absolute values.
@@ -7359,8 +7366,7 @@ Sigma_Exit:
       break;
     #endif // NUM_SERVOS > 0
 
-    #if (LARGE_FLASH == true && ( BEEPER > 0 || defined(ULTRALCD) || defined(LCD_USE_I2C_BUZZER)))
-    
+    #if (LARGE_FLASH == true && BEEPER > 0 )
     /*!
 	### M300 - Play tone <a href="https://reprap.org/wiki/G-code#M300:_Play_beep_sound">M300: Play beep sound</a>
 	In Prusa Firmware the defaults are `100Hz` and `1000ms`, so that `M300` without parameters will beep for a second.
@@ -7374,12 +7380,19 @@ Sigma_Exit:
     */
     case 300: // M300
     {
-      uint16_t beepS = code_seen('S') ? code_value() : 0;
       uint16_t beepP = code_seen('P') ? code_value() : 1000;
-      #if BEEPER > 0
-      if (beepP > 0)
-        Sound_MakeCustom(beepP,beepS,false);
-      #endif
+      uint16_t beepS;
+      if (!code_seen('S'))
+          beepS = 0;
+      else {
+          beepS = code_value();
+          if (!beepS) {
+              // handle S0 as a pause
+              _delay(beepP);
+              break;
+          }
+      }
+      Sound_MakeCustom(beepP, beepS, false);
     }
     break;
     #endif // M300
@@ -10465,12 +10478,12 @@ static void temp_compensation_start() {
 	if ((int)degHotend(active_extruder) > extrude_min_temp) {
 		current_position[E_AXIS] -= default_retraction;
 	}
-	plan_buffer_line_curposXYZE(400, active_extruder);
+	plan_buffer_line_curposXYZE(400);
 	
 	current_position[X_AXIS] = PINDA_PREHEAT_X;
 	current_position[Y_AXIS] = PINDA_PREHEAT_Y;
 	current_position[Z_AXIS] = PINDA_PREHEAT_Z;
-	plan_buffer_line_curposXYZE(3000 / 60, active_extruder);
+	plan_buffer_line_curposXYZE(3000 / 60);
 	st_synchronize();
 	while (fabs(degBed() - target_temperature_bed) > 1) delay_keep_alive(1000);
 
@@ -10489,7 +10502,7 @@ static void temp_compensation_apply() {
 	int z_shift = 0;
 	float z_shift_mm;
 
-	if (calibration_status() == CALIBRATION_STATUS_CALIBRATED) {
+	if (calibration_status_pinda()) {
 		if (target_temperature_bed % 10 == 0 && target_temperature_bed >= 60 && target_temperature_bed <= 100) {
 			i_add = (target_temperature_bed - 60) / 10;
 			z_shift = eeprom_read_word((uint16_t*)EEPROM_PROBE_TEMP_SHIFT + i_add);

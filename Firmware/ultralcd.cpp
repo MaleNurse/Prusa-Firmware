@@ -952,10 +952,8 @@ void lcd_commands()
                 lcd_setstatuspgm(MSG_WELCOME);
                 lcd_commands_step = 0;
                 lcd_commands_type = LcdCommands::Idle;
-                if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE) == 1)
-                {
+                if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE))
                     lcd_wizard(WizState::RepeatLay1Cal);
-                }
                 break;
 		}
 			}
@@ -1065,16 +1063,11 @@ void lcd_commands()
         case 1:
             lcd_commands_step = 0;
             lcd_commands_type = LcdCommands::Idle;
-
-            if (temp_model_autotune_result()) {
-                if (calibration_status() == CALIBRATION_STATUS_TEMP_MODEL_CALIBRATION) {
-                    // move to the next calibration step if not fully calibrated
-                    calibration_status_store(CALIBRATION_STATUS_LIVE_ADJUST);
-                }
-                if ((eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE) == 1)) {
-                    // successful: resume the wizard
-                    lcd_wizard(WizState::IsFil);
-                }
+            bool res = temp_model_autotune_result();
+            if (res) calibration_status_set(CALIBRATION_STATUS_TEMP_MODEL);
+            if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE)) {
+                // resume the wizard
+                lcd_wizard(res ? WizState::Restore : WizState::Failed);
             }
             break;
         }
@@ -2728,7 +2721,7 @@ static void lcd_babystep_z()
 		}
 
 		// same logic as in babystep_load
-	    if (calibration_status() >= CALIBRATION_STATUS_LIVE_ADJUST)
+	    if (!calibration_status_get(CALIBRATION_STATUS_LIVE_ADJUST))
 			_md->babystepMemZ = 0;
 
 		_md->babystepMemMMZ = _md->babystepMemZ/cs.axis_steps_per_unit[Z_AXIS];
@@ -2770,7 +2763,7 @@ static void lcd_babystep_z()
 #ifdef PINDA_THERMISTOR        
 		eeprom_update_byte(&(EEPROM_Sheets_base->s[active_sheet].pinda_temp),current_temperature_pinda);
 #endif //PINDA_THERMISTOR
-		calibration_status_store(CALIBRATION_STATUS_CALIBRATED);
+		calibration_status_set(CALIBRATION_STATUS_LIVE_ADJUST);
 	}
 	if (LCD_CLICKED) menu_back();
 }
@@ -3891,7 +3884,7 @@ void lcd_first_layer_calibration_reset()
     MenuData* menuData = (MenuData*)&(menu_data[0]);
 
     if(LCD_CLICKED || !eeprom_is_sheet_initialized(eeprom_read_byte(&(EEPROM_Sheets_base->active_sheet))) ||
-            (calibration_status() >= CALIBRATION_STATUS_LIVE_ADJUST) ||
+            (!calibration_status_get(CALIBRATION_STATUS_LIVE_ADJUST)) ||
             (0 == static_cast<int16_t>(eeprom_read_word(reinterpret_cast<uint16_t*>
             (&EEPROM_Sheets_base->s[(eeprom_read_byte(&(EEPROM_Sheets_base->active_sheet)))].z_offset)))))
     {
@@ -3976,14 +3969,14 @@ void lcd_v2_calibration()
 
 void lcd_wizard() {
 	bool result = true;
-	if (calibration_status() != CALIBRATION_STATUS_ASSEMBLED) {
-		result = lcd_show_multiscreen_message_yes_no_and_wait_P(_i("Running Wizard will delete current calibration results and start from the beginning. Continue?"), false, false);////MSG_WIZARD_RERUN c=20 r=7
+	if (calibration_status_get(CALIBRATION_WIZARD_STEPS)) {
+		// calibration already performed: ask before clearing the previous status
+		result = !lcd_show_multiscreen_message_yes_no_and_wait_P(_i("Running Wizard will delete current calibration results and start from the beginning. Continue?"), false);////MSG_WIZARD_RERUN c=20 r=7
 	}
 	if (result) {
-		calibration_status_store(CALIBRATION_STATUS_ASSEMBLED);
+		calibration_status_clear(CALIBRATION_WIZARD_STEPS);
 		lcd_wizard(WizState::Run);
-	}
-	else {
+	} else {
 		lcd_return_to_status();
 		lcd_update_enable(true);
 		lcd_update(2);
@@ -4134,61 +4127,69 @@ void lcd_wizard(WizState state)
 			saved_printing = false;
 			
 			if( eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE)==2){
+				// printer pre-assembled: finish remaining steps
 				lcd_show_fullscreen_message_and_wait_P(_T(MSG_WIZARD_WELCOME_SHIPPING));
 				state = S::Restore;
 			} else {
-				wizard_event = lcd_show_multiscreen_message_yes_no_and_wait_P(_T(MSG_WIZARD_WELCOME), false, true);
-				if (wizard_event) {
+				// new printer, factory reset or manual invocation
+				wizard_event = lcd_show_multiscreen_message_yes_no_and_wait_P(_T(MSG_WIZARD_WELCOME), false, LCD_LEFT_BUTTON_CHOICE);
+				if (wizard_event == LCD_LEFT_BUTTON_CHOICE) {
 					state = S::Restore;
 					eeprom_update_byte((uint8_t*)EEPROM_WIZARD_ACTIVE, 1);
 				} else {
+					// user interrupted
 					eeprom_update_byte((uint8_t*)EEPROM_WIZARD_ACTIVE, 0);
 					end = true;
 				}
 			}
 			break;
 		case S::Restore:
-			switch (calibration_status()) {
-			case CALIBRATION_STATUS_ASSEMBLED: state = S::Selftest; break; //run selftest
-			case CALIBRATION_STATUS_XYZ_CALIBRATION: state = S::Xyz; break; //run xyz cal.
-			case CALIBRATION_STATUS_Z_CALIBRATION: state = S::Z; break; //run z cal.
+			// clear any previous error for make _new_ errors visible
+			lcd_reset_alert_level();
+
+			// determine the next step in the required order
+			if (!calibration_status_get(CALIBRATION_STATUS_SELFTEST)) {
+				state = S::Selftest;
+			} else if (!calibration_status_get(CALIBRATION_STATUS_XYZ)) {
+				// S::Xyz *includes* S::Z so it needs to come before
+				// to avoid repeating Z alignment
+				state = S::Xyz;
+			} else if (!calibration_status_get(CALIBRATION_STATUS_Z)) {
+				state = S::Z;
 #ifdef TEMP_MODEL
-			case CALIBRATION_STATUS_TEMP_MODEL_CALIBRATION: state = S::TempModel; break; //run temp model cal.
+			} else if (!calibration_status_get(CALIBRATION_STATUS_TEMP_MODEL)) {
+				state = S::TempModel;
 #endif //TEMP_MODEL
-			case CALIBRATION_STATUS_LIVE_ADJUST: state = S::IsFil; break; //run live adjust
-			case CALIBRATION_STATUS_CALIBRATED: end = true; eeprom_update_byte((uint8_t*)EEPROM_WIZARD_ACTIVE, 0); break;
-			default: state = S::Selftest; break; //if calibration status is unknown, run wizard from the beginning
+			} else if (!calibration_status_get(CALIBRATION_STATUS_LIVE_ADJUST)) {
+				state = S::IsFil;
+			} else {
+				// all required steps completed, finish successfully
+				state = S::Finish;
 			}
-			break; 
+			break;
 		case S::Selftest:
 			lcd_show_fullscreen_message_and_wait_P(_i("First, I will run the selftest to check most common assembly problems."));////MSG_WIZARD_SELFTEST c=20 r=8
 			wizard_event = lcd_selftest();
-			if (wizard_event) {
-				calibration_status_store(CALIBRATION_STATUS_XYZ_CALIBRATION);
-				state = S::Xyz;
-			}
-			else end = true;
+			state = (wizard_event ? S::Restore : S::Failed);
 			break;
 		case S::Xyz:
 			lcd_show_fullscreen_message_and_wait_P(_i("I will run xyz calibration now. It will take up to 24 mins."));////MSG_WIZARD_XYZ_CAL c=20 r=8
 			wizard_event = gcode_M45(false, 0);
-			if (wizard_event) {
-#ifdef TEMP_MODEL
-			lcd_reset_alert_level();
-			state = S::TempModel;
-#else
-			state = S::IsFil;
-#endif //TEMP_MODEL
-			} else end = true;
+			state = (wizard_event ? S::Restore : S::Failed);
 			break;
 		case S::Z:
 			lcd_show_fullscreen_message_and_wait_P(_i("Please remove shipping helpers first."));////MSG_REMOVE_SHIPPING_HELPERS c=20 r=3
 			lcd_show_fullscreen_message_and_wait_P(_i("Now remove the test print from steel sheet."));////MSG_REMOVE_TEST_PRINT c=20 r=4
+			wizard_event = lcd_show_fullscreen_message_yes_no_and_wait_P(_T(MSG_STEEL_SHEET_CHECK), false);
+			if (wizard_event == LCD_MIDDLE_BUTTON_CHOICE) {
+				lcd_show_fullscreen_message_and_wait_P(_T(MSG_PLACE_STEEL_SHEET));
+			}
 			lcd_show_fullscreen_message_and_wait_P(_i("I will run z calibration now."));////MSG_WIZARD_Z_CAL c=20 r=8
-			wizard_event = lcd_show_fullscreen_message_yes_no_and_wait_P(_T(MSG_STEEL_SHEET_CHECK), false, false);
-			if (!wizard_event) lcd_show_fullscreen_message_and_wait_P(_T(MSG_PLACE_STEEL_SHEET));
 			wizard_event = gcode_M45(true, 0);
-			if (wizard_event) {
+			if (!wizard_event) {
+				state = S::Failed;
+			} else {
+				raise_z_above(MIN_Z_FOR_SWAP);
 				//current filament needs to be unloaded and then new filament should be loaded
 				//start to preheat nozzle for unloading remaining PLA filament
 				setTargetHotend(PLA_PREHEAT_HOTEND_TEMP, 0);
@@ -4199,9 +4200,8 @@ void lcd_wizard(WizState state)
 				//load filament
 				lcd_wizard_load();
 				setTargetHotend(0, 0); //we are finished, cooldown nozzle
-				state = S::Finish; //shipped, no need to set first layer, go to final message directly
+				state = S::Restore;
 			}
-			else end = true;
 			break;
 #ifdef TEMP_MODEL
 		case S::TempModel:
@@ -4261,16 +4261,15 @@ void lcd_wizard(WizState state)
 			}
 			else
 			{
-			    lcd_show_fullscreen_message_and_wait_P(_i("If you have additional steel sheets, calibrate their presets in Settings - HW Setup - Steel sheets."));////MSG_ADDITIONAL_SHEETS c=20 r=9
-				state = S::Finish;
+				lcd_show_fullscreen_message_and_wait_P(_i("If you have additional steel sheets, calibrate their presets in Settings - HW Setup - Steel sheets."));////MSG_ADDITIONAL_SHEETS c=20 r=9
+				state = S::Restore;
 			}
 			break;
 		case S::Finish:
+		case S::Failed:
 			eeprom_update_byte((uint8_t*)EEPROM_WIZARD_ACTIVE, 0);
 			end = true;
 			break;
-
-		default: break;
 		}
 	}
     
@@ -4278,30 +4277,27 @@ void lcd_wizard(WizState state)
     
     const char *msg = NULL;
 	printf_P(_N("Wizard end state: %d\n"), (uint8_t)state);
-	switch (state) { //final message
-	case S::Restore: //printer was already calibrated
-		msg = _T(MSG_WIZARD_DONE);
+	switch (state) {
+	case S::Run:
+		// user interrupted
+		msg = _T(MSG_WIZARD_QUIT);
 		break;
-	case S::Selftest: //selftest
-	case S::Xyz: //xyz cal.
-	case S::Z: //z cal.
-		msg = _T(MSG_WIZARD_CALIBRATION_FAILED);
-		break;
-	case S::Finish: //we are finished
+
+	case S::Finish:
+		// we are successfully finished
 		msg = _T(MSG_WIZARD_DONE);
 		lcd_reset_alert_level();
 		lcd_setstatuspgm(MSG_WELCOME);
-		lcd_return_to_status(); 
+		lcd_return_to_status();
 		break;
-    case S::Preheat:
-    case S::Lay1CalCold:
-    case S::Lay1CalHot:
-#ifdef TEMP_MODEL
-	case S::TempModel: // exiting for calibration
-#endif //TEMP_MODEL
-        break;
+
+	case S::Failed:
+		// aborted due to failure
+		msg = _T(MSG_WIZARD_CALIBRATION_FAILED);
+		break;
+
 	default:
-		msg = _T(MSG_WIZARD_QUIT);
+		// exiting for later re-entry
 		break;
 	}
 	if (msg) {
@@ -4947,11 +4943,10 @@ static void lcd_settings_menu()
 #if defined (TMC2130) && defined (LINEARITY_CORRECTION)
     MENU_ITEM_SUBMENU_P(_i("Lin. correction"), lcd_settings_linearity_correction_menu);////MSG_LIN_CORRECTION c=18
 #endif //LINEARITY_CORRECTION && TMC2130
+#ifdef PINDA_THERMISTOR
     if(has_temperature_compensation())
-    {
         MENU_ITEM_TOGGLE_P(_T(MSG_PINDA_CALIBRATION), eeprom_read_byte((unsigned char *)EEPROM_TEMP_CAL_ACTIVE) ? _T(MSG_ON) : _T(MSG_OFF), lcd_temp_calibration_set);
-    }
-
+#endif
 #ifdef HAS_SECOND_SERIAL_PORT
     MENU_ITEM_TOGGLE_P(_T(MSG_RPI_PORT), (selectedSerialPort == 0) ? _T(MSG_OFF) : _T(MSG_ON), lcd_second_serial_set);
 #endif //HAS_SECOND_SERIAL
@@ -5037,10 +5032,10 @@ static void lcd_calibration_menu()
     MENU_ITEM_SUBMENU_P(_i("Show end stops"), menu_show_end_stops);////MSG_SHOW_END_STOPS c=18
 #endif
     MENU_ITEM_GCODE_P(_i("Reset XYZ calibr."), PSTR("M44"));////MSG_CALIBRATE_BED_RESET c=18
+#ifdef PINDA_THERMISTOR
     if(has_temperature_compensation())
-    {
 	    MENU_ITEM_FUNCTION_P(_T(MSG_PINDA_CALIBRATION), lcd_calibrate_pinda);
-    }
+#endif
   }
 #ifdef TEMP_MODEL
     MENU_ITEM_SUBMENU_P(_n("Temp Model cal."), lcd_temp_model_cal);
@@ -5519,10 +5514,8 @@ static void lcd_reset_sheet()
 	if (selected_sheet == eeprom_read_byte(&(EEPROM_Sheets_base->active_sheet)))
 	{
         eeprom_switch_to_next_sheet();
-        if((-1 == eeprom_next_initialized_sheet(0)) && (CALIBRATION_STATUS_CALIBRATED == calibration_status()))
-        {
-            calibration_status_store(CALIBRATION_STATUS_LIVE_ADJUST);
-        }
+        if (-1 == eeprom_next_initialized_sheet(0))
+            calibration_status_clear(CALIBRATION_STATUS_LIVE_ADJUST);
 	}
 
 	menu_back();
@@ -6668,6 +6661,7 @@ bool lcd_selftest()
 	if (_result)
 	{
 		LCD_ALERTMESSAGERPGM(_i("Self test OK"));////MSG_SELFTEST_OK c=20
+		calibration_status_set(CALIBRATION_STATUS_SELFTEST);
 	}
 	else
 	{
@@ -7033,6 +7027,10 @@ static bool lcd_selfcheck_check_heater(bool _isbed)
 
 	target_temperature[0] = (_isbed) ? 0 : 200;
 	target_temperature_bed = (_isbed) ? 100 : 0;
+#ifdef TEMP_MODEL
+	bool tm_was_enabled = temp_model_enabled();
+	temp_model_set_enabled(false);
+#endif //TEMP_MODEL
 	manage_heater();
 	manage_inactivity(true);
 
@@ -7069,26 +7067,21 @@ static bool lcd_selfcheck_check_heater(bool _isbed)
 	*/
 
     bool _stepresult = false;
-    if (Stopped)
+    if (Stopped || _opposite_result < ((_isbed) ? 30 : 9))
     {
-        // thermal error occurred while heating the nozzle
-        lcd_selftest_error(TestError::Heater, "", "");
+        if (!Stopped && _checked_result >= ((_isbed) ? 9 : 30))
+            _stepresult = true;
+        else
+            lcd_selftest_error(TestError::Heater, "", "");
     }
     else
     {
-        if (_opposite_result < ((_isbed) ? 30 : 9))
-        {
-            if (_checked_result >= ((_isbed) ? 9 : 30))
-                _stepresult = true;
-            else
-                lcd_selftest_error(TestError::Heater, "", "");
-        }
-        else
-        {
-            lcd_selftest_error(TestError::Bed, "", "");
-        }
+        lcd_selftest_error(TestError::Bed, "", "");
     }
 
+#ifdef TEMP_MODEL
+	temp_model_set_enabled(tm_was_enabled);
+#endif //TEMP_MODEL
 	manage_heater();
 	manage_inactivity(true);
 	return _stepresult;
