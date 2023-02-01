@@ -32,7 +32,7 @@
 #include "stepper.h"
 #include "ultralcd.h"
 #include "menu.h"
-#include "sound.h"
+#include "util.h"
 #include "fancheck.h"
 #include "messages.h"
 #include "language.h"
@@ -2387,8 +2387,8 @@ static void setup()
 
 static bool calibrated()
 {
-    if(!(data.P >= 0)) return false;
-    if(!(data.C >= 0)) return false;
+    if(!(data.P > 0)) return false;
+    if(!(data.C > 0)) return false;
     if(!(data.Ta_corr != NAN)) return false;
     for(uint8_t i = 0; i != TEMP_MODEL_R_SIZE; ++i) {
         if(!(temp_model::data.R[i] >= 0))
@@ -2634,11 +2634,9 @@ namespace temp_model_cal {
 // set current fan speed for both front/backend
 static __attribute__((noinline)) void set_fan_speed(uint8_t fan_speed)
 {
-#if (defined(EXTRUDER_0_AUTO_FAN_PIN) && EXTRUDER_0_AUTO_FAN_PIN > -1)
     // reset the fan measuring state due to missing hysteresis handling on the checking side
-    fan_measuring = false;
-    extruder_autofan_last_check = _millis();
-#endif
+    resetFanCheck();
+
     fanSpeed = fan_speed;
 #ifdef FAN_SOFT_PWM
     fanSpeedSoftPwm = fan_speed;
@@ -2946,6 +2944,7 @@ void temp_model_autotune(int16_t temp, bool selftest)
         memcpy(temp_model::data.R, orig_R, sizeof(temp_model::data.R));
         temp_model_set_enabled(orig_enabled);
     } else {
+        calibration_status_set(CALIBRATION_STATUS_TEMP_MODEL);
         lcd_setstatuspgm(MSG_WELCOME);
         temp_model_cal::set_fan_speed(0);
         temp_model_set_enabled(orig_enabled);

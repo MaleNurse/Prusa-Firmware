@@ -1050,6 +1050,7 @@ void lcd_commands()
             [[fallthrough]];
 
         case 3:
+            temp_model_set_warn_beep(false);
             enquecommand_P(PSTR("M310 A F1"));
             lcd_commands_step = 2;
             break;
@@ -1063,8 +1064,8 @@ void lcd_commands()
         case 1:
             lcd_commands_step = 0;
             lcd_commands_type = LcdCommands::Idle;
+            temp_model_set_warn_beep(true);
             bool res = temp_model_autotune_result();
-            if (res) calibration_status_set(CALIBRATION_STATUS_TEMP_MODEL);
             if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE)) {
                 // resume the wizard
                 lcd_wizard(res ? WizState::Restore : WizState::Failed);
@@ -1092,7 +1093,7 @@ void lcd_commands()
                 lcd_update_enabled = true;
                 lcd_draw_update = 2; //force lcd clear and update after the stack unwinds.
                 enquecommand_P(PSTR("G28 W"));
-                enquecommand_P(PSTR("G1 X125 Y10 Z150 F1000"));
+                enquecommand_P(PSTR("G1 X125 Z200 F1000"));
                 enquecommand_P(PSTR("M109 S280"));
 #ifdef TEMP_MODEL
                 was_enabled = temp_model_enabled();
@@ -3520,7 +3521,8 @@ static void lcd_show_sensors_state()
 	uint8_t idler_state = STATE_NA;
 
 	pinda_state = READ(Z_MIN_PIN);
-	if (mmu_enabled && !mmu_last_finda_response.expired(1000))
+	if (mmu_enabled && ((_millis() - mmu_last_finda_response) < 1000ul))
+	//if (mmu_enabled && !mmu_last_finda_response.expired(1000))
 	{
 		finda_state = mmu_finda;
 	}
@@ -3971,7 +3973,7 @@ void lcd_wizard() {
 	bool result = true;
 	if (calibration_status_get(CALIBRATION_WIZARD_STEPS)) {
 		// calibration already performed: ask before clearing the previous status
-		result = !lcd_show_multiscreen_message_yes_no_and_wait_P(_i("Running Wizard will delete current calibration results and start from the beginning. Continue?"), false);////MSG_WIZARD_RERUN c=20 r=7
+		result = lcd_show_multiscreen_message_yes_no_and_wait_P(_i("Running Wizard will delete current calibration results and start from the beginning. Continue?"), false);////MSG_WIZARD_RERUN c=20 r=7
 	}
 	if (result) {
 		calibration_status_clear(CALIBRATION_WIZARD_STEPS);
@@ -5435,7 +5437,12 @@ void lcd_resume_print()
     st_synchronize();
     custom_message_type = CustomMsg::Resuming;
     isPrintPaused = false;
-    Stopped = false; // resume processing USB commands again
+
+    // resume processing USB commands again and restore hotend fan state (in case the print was
+    // stopped due to a thermal error)
+    hotendDefaultAutoFanState();
+    Stopped = false;
+
     restore_print_from_ram_and_continue(default_retraction);
     pause_time += (_millis() - start_pause_print); //accumulate time when print is paused for correct statistics calculation
     refresh_cmd_timeout();
@@ -6073,6 +6080,9 @@ void lcd_print_stop_finish()
     } else {
         // Turn off the print fan
         fanSpeed = 0;
+
+        // restore the auto hotend state
+        hotendDefaultAutoFanState();
     }
 
     if (mmu_enabled) extr_unload(); //M702 C
@@ -6660,8 +6670,9 @@ bool lcd_selftest()
 	
 	if (_result)
 	{
-		LCD_ALERTMESSAGERPGM(_i("Self test OK"));////MSG_SELFTEST_OK c=20
 		calibration_status_set(CALIBRATION_STATUS_SELFTEST);
+		lcd_setstatuspgm(_i("Self test OK"));////MSG_SELFTEST_OK c=20
+		lcd_return_to_status();
 	}
 	else
 	{
