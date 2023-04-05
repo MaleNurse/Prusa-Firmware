@@ -154,26 +154,6 @@ uint8_t menu_item_ret(void)
 	return 1;
 }
 
-/*
-int menu_draw_item_printf_P(char type_char, const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-	int ret = 0;
-    lcd_set_cursor(0, menu_row);
-	if (lcd_encoder == menu_item)
-		lcd_print('>');
-	else
-		lcd_print(' ');
-	int cnt = vfprintf_P(lcdout, format, args);
-	for (int i = cnt; i < 18; i++)
-		lcd_print(' ');
-	lcd_print(type_char);
-	va_end(args);
-	return ret;
-}
-*/
-
 static char menu_selection_mark(){
 	return (lcd_encoder == menu_item)?'>':' ';
 }
@@ -181,7 +161,9 @@ static char menu_selection_mark(){
 static void menu_draw_item_puts_P(char type_char, const char* str)
 {
     lcd_set_cursor(0, menu_row);
-    lcd_printf_P(PSTR("%c%-18.18S%c"), menu_selection_mark(), str, type_char);
+    lcd_putc(menu_selection_mark());
+    lcd_print_pad_P(str, LCD_WIDTH - 2);
+    lcd_putc(type_char);
 }
 
 static void menu_draw_toggle_puts_P(const char* str, const char* toggle, const uint8_t settings)
@@ -191,13 +173,22 @@ static void menu_draw_toggle_puts_P(const char* str, const char* toggle, const u
     //a = selection mark. If it's set(1), then '>' will be used as the first character on the line. Else leave blank
     //b = toggle string is from progmem
     //c = do not set cursor at all. Must be handled externally.
-    char lineStr[LCD_WIDTH + 1];
-    const char eol = (toggle == NULL)?LCD_STR_ARROW_RIGHT[0]:' ';
+    uint8_t is_progmem = settings & 0x02;
+    const char eol = (toggle == NULL) ? LCD_STR_ARROW_RIGHT[0] : ' ';
     if (toggle == NULL) toggle = _T(MSG_NA);
-    sprintf_P(lineStr, PSTR("%c%-18.18S"), (settings & 0x01)?'>':' ', str);
-    sprintf_P(lineStr + LCD_WIDTH - ((settings & 0x02)?strlen_P(toggle):strlen(toggle)) - 3, (settings & 0x02)?PSTR("[%S]%c"):PSTR("[%s]%c"), toggle, eol);
+    uint8_t len = 4 + (is_progmem ? strlen_P(toggle) : strlen(toggle));
     if (!(settings & 0x04)) lcd_set_cursor(0, menu_row);
-    fputs(lineStr, lcdout);
+    lcd_putc((settings & 0x01) ? '>' : ' ');
+    lcd_print_pad_P(str, LCD_WIDTH - len);
+    lcd_putc('[');
+    if (is_progmem)
+    {
+        lcd_puts_P(toggle);
+    } else {
+        lcd_print(toggle);
+    }
+    lcd_putc(']');
+    lcd_putc(eol);
 }
 
 //! @brief Format sheet name
@@ -233,7 +224,9 @@ static void menu_draw_item_select_sheet_E(char type_char, const Sheet &sheet)
     lcd_set_cursor(0, menu_row);
     SheetFormatBuffer buffer;
     menu_format_sheet_select_E(sheet, buffer);
-    lcd_printf_P(PSTR("%c%-18.18s%c"), menu_selection_mark(), buffer.c, type_char);
+    lcd_putc(menu_selection_mark());
+    lcd_print_pad(buffer.c, LCD_WIDTH - 2);
+    lcd_putc(type_char);
 }
 
 
@@ -242,25 +235,19 @@ static void menu_draw_item_puts_E(char type_char, const Sheet &sheet)
     lcd_set_cursor(0, menu_row);
     SheetFormatBuffer buffer;
     menu_format_sheet_E(sheet, buffer);
-    lcd_printf_P(PSTR("%c%-18.18s%c"), menu_selection_mark(), buffer.c, type_char);
+    lcd_putc(menu_selection_mark());
+    lcd_print_pad(buffer.c, LCD_WIDTH - 2);
+    lcd_putc(type_char);
 }
 
 static void menu_draw_item_puts_P(char type_char, const char* str, char num)
 {
-    lcd_set_cursor(0, menu_row);
-    lcd_printf_P(PSTR("%c%-.16S "), menu_selection_mark(), str);
-    lcd_putc(num);
-    lcd_putc_at(19, menu_row, type_char);
+    const uint8_t max_strlen = LCD_WIDTH - 3;
+    lcd_putc_at(0, menu_row, menu_selection_mark());
+    uint8_t len = lcd_print_pad_P(str, max_strlen);
+    lcd_putc_at((max_strlen - len) + 2, menu_row, num);
+    lcd_putc_at(LCD_WIDTH - 1, menu_row, type_char);
 }
-
-/*
-int menu_draw_item_puts_P_int16(char type_char, const char* str, int16_t val, )
-{
-    lcd_set_cursor(0, menu_row);
-	int cnt = lcd_printf_P(PSTR("%c%-18S%c"), (lcd_encoder == menu_item)?'>':' ', str, type_char);
-	return cnt;
-}
-*/
 
 void menu_item_dummy(void)
 {
@@ -448,13 +435,21 @@ static void menu_draw_P(char chr, const char* str, int16_t val);
 template<>
 void menu_draw_P<int16_t*>(char chr, const char* str, int16_t val)
 {
-	int text_len = strlen_P(str);
-	if (text_len > 15) text_len = 15;
-	char spaces[LCD_WIDTH + 1] = {0};
-    memset(spaces,' ', LCD_WIDTH);
-	if (val <= -100) spaces[15 - text_len - 1] = 0;
-	else spaces[15 - text_len] = 0;
-	lcd_printf_P(menu_fmt_int3, chr, str, spaces, val);
+	// The LCD row position is controlled externally. We may only modify the column here
+	lcd_putc(chr);
+	uint8_t len = lcd_print_pad_P(str, LCD_WIDTH - 1);
+	lcd_set_cursor_column((LCD_WIDTH - 1) - len + 1);
+	lcd_putc(':');
+
+	// The value is right adjusted, set the cursor then render the value
+	if (val < 10) { // 1 digit
+		lcd_set_cursor_column(LCD_WIDTH - 1);
+	} else if (val < 100) { // 2 digits
+		lcd_set_cursor_column(LCD_WIDTH - 2);
+	} else { // 3 digits
+		lcd_set_cursor_column(LCD_WIDTH - 3);
+	}
+	lcd_print(val);
 }
 
 template<>
@@ -558,7 +553,8 @@ void menu_progressbar_init(uint16_t total, const char* title)
 	progressbar_total = total;
 	
 	lcd_set_cursor(0, 1);
-	lcd_printf_P(PSTR("%-20.20S\n"), title);
+	lcd_print_pad_P(title, LCD_WIDTH);
+	lcd_set_cursor(0, 2);
 }
 
 void menu_progressbar_update(uint16_t newVal)

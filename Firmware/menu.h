@@ -56,9 +56,7 @@ extern uint8_t menu_row;
 
 //scroll offset in the current menu
 extern uint8_t menu_top;
-
 extern uint8_t menu_clicked;
-
 extern uint8_t menu_leaving;
 
 //function pointer to the currently active menu
