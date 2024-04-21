@@ -15,9 +15,6 @@ GENERAL SETTINGS
 #define FILAMENT_SIZE "1_75mm_MK2"
 #define NOZZLE_TYPE "E3Dv6full"
 
-// Developer flag
-#define DEVELOPER
-
 // Printer name
 #define CUSTOM_MENDEL_NAME "Prusa i3 MK2"
 
@@ -49,9 +46,6 @@ AXIS SETTINGS
 #define INVERT_Y_DIR 0    // for Mendel set to 1, for Orca set to 0
 #define INVERT_Z_DIR 0    // for Mendel set to 0, for Orca set to 1
 #define INVERT_E0_DIR 1    // for direct drive extruder v9 set to 1, for geared extruder set to 0
-#define INVERT_E1_DIR 1    // for direct drive extruder v9 set to 1, for geared extruder set to 0
-#define INVERT_E2_DIR 1    // for direct drive extruder v9 set to 1, for geared extruder set to 0
-
 
 // Home position
 #define MANUAL_X_HOME_POS 0
@@ -105,8 +99,6 @@ EXTRUDER SETTINGS
 
 // Mintemps
 #define HEATER_0_MINTEMP 30
-#define HEATER_1_MINTEMP 5
-#define HEATER_2_MINTEMP 5
 #define HEATER_MINTEMP_DELAY 15000                // [ms] ! if changed, check maximal allowed value @ ShortTimer
 #if HEATER_MINTEMP_DELAY>USHRT_MAX
 #error "Check maximal allowed value @ ShortTimer (see HEATER_MINTEMP_DELAY definition)"
@@ -123,8 +115,6 @@ EXTRUDER SETTINGS
 #else
 #define HEATER_0_MAXTEMP 305
 #endif
-#define HEATER_1_MAXTEMP 305
-#define HEATER_2_MAXTEMP 305
 #define BED_MAXTEMP 150
 
 #if defined(E3D_PT100_EXTRUDER_WITH_AMP) || defined(E3D_PT100_EXTRUDER_NO_AMP)
@@ -142,10 +132,11 @@ EXTRUDER SETTINGS
 // Extrude mintemp
 #define EXTRUDE_MINTEMP 175
 
+// Quick nozzle change supported
+//#define QUICK_NOZZLE_CHANGE
+
 // Extruder cooling fans
 #define EXTRUDER_0_AUTO_FAN_PIN   8
-#define EXTRUDER_1_AUTO_FAN_PIN   -1
-#define EXTRUDER_2_AUTO_FAN_PIN   -1
 #define EXTRUDER_AUTO_FAN_TEMPERATURE 50
 #define EXTRUDER_AUTO_FAN_SPEED   255  // == full speed
 
@@ -161,7 +152,7 @@ CHANGE FILAMENT SETTINGS
 #define FILAMENTCHANGE_YPOS 0
 #define FILAMENTCHANGE_ZADD 2
 #define FILAMENTCHANGE_FIRSTRETRACT -2
-#define FILAMENTCHANGE_FINALRETRACT -80
+#define FILAMENTCHANGE_FINALRETRACT 0
 
 #define FILAMENTCHANGE_FIRSTFEED 70 //E distance in mm for fast filament loading sequence used used in filament change (M600)
 #define FILAMENTCHANGE_FINALFEED 50 //E distance in mm for slow filament loading sequence used used in filament change (M600) and filament load (M701) 
@@ -173,6 +164,15 @@ CHANGE FILAMENT SETTINGS
 #define FILAMENTCHANGE_RFEED 400
 #define FILAMENTCHANGE_EXFEED 2
 #define FILAMENTCHANGE_ZFEED 15
+
+//Retract and then extrude some filament to prevent oozing.
+//After the loading sequence and after a print is canceled, the filament is retracted to get it out of the heat zone of the nozzle.
+//Then a small extrusion is performed to make sure the filament is close enough for the next print without oozing.
+//#define COMMUNITY_PREVENT_OOZE
+#ifdef COMMUNITY_PREVENT_OOZE
+#define FILAMENTCHANGE_COMMUNITY_ROOZEFEED -10 //E retract distance in mm for ooze prevention
+#define FILAMENTCHANGE_COMMUNITY_EOOZEFEED 4 //E extrude distance in mm for ooze prevention
+#endif //End COMMUNITY_PREVENT_OOZE
 
 #endif
 
@@ -186,6 +186,12 @@ ADDITIONAL FEATURES SETTINGS
 
 #define TEMP_RUNAWAY_EXTRUDER_HYSTERESIS 15
 #define TEMP_RUNAWAY_EXTRUDER_TIMEOUT 45
+
+/*------------------------------------
+ HOST FEATURES
+ *------------------------------------*/
+
+//#define HOST_SHUTDOWN              //Host supports "//action:shutdown" feature
 
 /*------------------------------------
 MOTOR CURRENT SETTINGS
@@ -213,12 +219,6 @@ BED SETTINGS
 #ifdef MESH_BED_LEVELING
 
 #define MBL_Z_STEP 0.01
-
-// Mesh definitions
-#define MESH_MIN_X 35
-#define MESH_MAX_X 238
-#define MESH_MIN_Y 6
-#define MESH_MAX_Y 202
 
 // Mesh upsample definition
 #define MESH_NUM_X_POINTS 7
@@ -370,8 +370,6 @@ THERMISTORS SETTINGS
 #else
 #define TEMP_SENSOR_0 5
 #endif
-#define TEMP_SENSOR_1 0
-#define TEMP_SENSOR_2 0
 #if defined(E3D_PT100_BED_WITH_AMP)
 #define TEMP_SENSOR_BED 247
 #elif defined(E3D_PT100_BED_NO_AMP)
@@ -385,9 +383,6 @@ THERMISTORS SETTINGS
 
 #define MAX_BED_TEMP_CALIBRATION 50
 #define MAX_HOTEND_TEMP_CALIBRATION 50
-
-#define MAX_E_STEPS_PER_UNIT 250
-#define MIN_E_STEPS_PER_UNIT 100
 
 #define Z_BABYSTEP_MIN -3999
 #define Z_BABYSTEP_MAX 0
@@ -406,7 +401,7 @@ THERMISTORS SETTINGS
 
 #define DEFAULT_PID_TEMP 210
 
-#define END_FILE_SECTION 20000 //number of bytes from end of file used for checking if file is complete
+#define END_FILE_SECTION 30720 //number of bytes from end of file used for checking if file is complete
 
 // Safety timer
 #define SAFETYTIMER
@@ -415,12 +410,7 @@ THERMISTORS SETTINGS
 #define M600_TIMEOUT 600  //seconds
 
 #define MMU_FILAMENT_COUNT 5
-
-#define MMU_REQUIRED_FW_BUILDNR 132
-
 //#define SUPPORT_VERBOSITY
-
-#define MMU_IDLER_SENSOR_ATTEMPTS_NR 21 //max. number of attempts to load filament if first load failed; value for max bowden length and case when loading fails right at the beginning
 
 // Default Arc Interpolation Settings (Now configurable via M214)
 #define DEFAULT_N_ARC_CORRECTION       25 // Number of interpolated segments between corrections.

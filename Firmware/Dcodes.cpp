@@ -3,6 +3,7 @@
 #include "Configuration.h"
 #include "language.h"
 #include "cmdqueue.h"
+#include "util.h"
 #include <stdio.h>
 #include <avr/pgmspace.h>
 
@@ -119,7 +120,7 @@ void write_mem(uint16_t address, uint16_t count, const uint8_t* data, const dcod
         switch (type)
         {
         case dcode_mem_t::sram: *((uint8_t*)address) = data[i]; break;
-        case dcode_mem_t::eeprom: eeprom_write_byte((uint8_t*)address, data[i]); break;
+        case dcode_mem_t::eeprom: eeprom_write_byte_notify((uint8_t*)address, data[i]); break;
         case dcode_mem_t::progmem: break;
         case dcode_mem_t::xflash: break;
         }
@@ -192,7 +193,7 @@ void dcode_3()
 
 #if 0
 extern float current_temperature_pinda;
-extern float axis_steps_per_unit[NUM_AXIS];
+extern float axis_steps_per_mm[NUM_AXIS];
 
 
 #define LOG(args...) printf(args)
@@ -254,7 +255,7 @@ void dcode_1()
 	LOG("D1 - Clear EEPROM and RESET\n");
 	cli();
 	for (int i = 0; i < 8192; i++)
-		eeprom_write_byte((unsigned char*)i, (unsigned char)0xff);
+		eeprom_write_byte_notify((unsigned char*)i, (unsigned char)0xff);
 	softReset();
 }
 #endif
@@ -478,7 +479,7 @@ void dcode_8()
 		{
 			uint16_t offs = 0;
 			if (i > 0) offs = eeprom_read_word(((uint16_t*)EEPROM_PROBE_TEMP_SHIFT) + (i - 1));
-			float foffs = ((float)offs) / cs.axis_steps_per_unit[Z_AXIS];
+			float foffs = ((float)offs) / cs.axis_steps_per_mm[Z_AXIS];
 			offs = 1000 * foffs;
 			printf_P(PSTR("temp_pinda=%dC temp_shift=%dum\n"), 35 + i * 5, offs);
 		}
@@ -486,12 +487,12 @@ void dcode_8()
 	else if (strchr_pointer[1+1] == '!')
 	{
 		cal_status = 1;
-		eeprom_write_byte((uint8_t*)EEPROM_CALIBRATION_STATUS_PINDA, cal_status);
-		eeprom_write_word(((uint16_t*)EEPROM_PROBE_TEMP_SHIFT) + 0,   8); //40C -  20um -   8usteps
-		eeprom_write_word(((uint16_t*)EEPROM_PROBE_TEMP_SHIFT) + 1,  24); //45C -  60um -  24usteps
-		eeprom_write_word(((uint16_t*)EEPROM_PROBE_TEMP_SHIFT) + 2,  48); //50C - 120um -  48usteps
-		eeprom_write_word(((uint16_t*)EEPROM_PROBE_TEMP_SHIFT) + 3,  80); //55C - 200um -  80usteps
-		eeprom_write_word(((uint16_t*)EEPROM_PROBE_TEMP_SHIFT) + 4, 120); //60C - 300um - 120usteps
+		eeprom_write_byte_notify((uint8_t*)EEPROM_CALIBRATION_STATUS_PINDA, cal_status);
+		eeprom_write_word_notify(((uint16_t*)EEPROM_PROBE_TEMP_SHIFT) + 0,   8); //40C -  20um -   8usteps
+		eeprom_write_word_notify(((uint16_t*)EEPROM_PROBE_TEMP_SHIFT) + 1,  24); //45C -  60um -  24usteps
+		eeprom_write_word_notify(((uint16_t*)EEPROM_PROBE_TEMP_SHIFT) + 2,  48); //50C - 120um -  48usteps
+		eeprom_write_word_notify(((uint16_t*)EEPROM_PROBE_TEMP_SHIFT) + 3,  80); //55C - 200um -  80usteps
+		eeprom_write_word_notify(((uint16_t*)EEPROM_PROBE_TEMP_SHIFT) + 4, 120); //60C - 300um - 120usteps
 	}
 	else
 	{
@@ -822,7 +823,7 @@ void dcode_2130()
 			}
 			else if (strcmp(strchr_pointer + 7, "wave") == 0)
 			{
-				tmc2130_get_wave(axis, 0, stdout);
+				tmc2130_get_wave(axis, 0);
 			}
 		}
 		else if (strchr_pointer[1+5] == '!')
@@ -843,9 +844,9 @@ void dcode_2130()
 					uint16_t res_new = tmc2130_mres2usteps(mres);
 					tmc2130_set_res(axis, res_new);
 					if (res_new > res)
-						cs.axis_steps_per_unit[axis] *= (res_new / res);
+						cs.axis_steps_per_mm[axis] *= (res_new / res);
 					else
-						cs.axis_steps_per_unit[axis] /= (res / res_new);
+						cs.axis_steps_per_mm[axis] /= (res / res_new);
 				}
 			}
 			else if (strncmp(strchr_pointer + 7, "wave", 4) == 0)

@@ -71,7 +71,7 @@ union dda_usteps_t
 typedef struct {
   // Fields used by the bresenham algorithm for tracing the line
   // steps_x.y,z, step_event_count, acceleration_rate, direction_bits and active_extruder are set by plan_buffer_line().
-  dda_isteps_t steps_x, steps_y, steps_z, steps_e;  // Step count along each axis
+  dda_isteps_t steps[NUM_AXIS];             // Step count along each axis
   dda_usteps_t step_event_count;            // The number of step events required to complete this block
   uint32_t acceleration_rate;               // The acceleration rate used for acceleration calculation
   unsigned char direction_bits;             // The direction bit set for this block (refers to *_DIRECTION_BIT in config.h)
@@ -103,8 +103,7 @@ typedef struct {
   uint32_t initial_rate;              // The jerk-adjusted step rate at start of block  
   uint32_t final_rate;                // The minimal rate at exit
   uint32_t acceleration_steps_per_s2; // acceleration steps/sec^2
-  //FIXME does it have to be int? Probably uint8_t would be just fine. Need to change in other places as well
-  int fan_speed;
+  uint8_t fan_speed; // Print fan speed, ranges from 0 to 255
   volatile char busy;
 
 
@@ -188,8 +187,8 @@ extern float* max_feedrate;
 
 
 // Use M201 to override by software
-extern unsigned long* max_acceleration_units_per_sq_second; 
-extern unsigned long axis_steps_per_sqr_second[NUM_AXIS];
+extern uint32_t* max_acceleration_mm_per_s2; 
+extern uint32_t max_acceleration_steps_per_s2[NUM_AXIS];
 
 extern long position[NUM_AXIS];
 
@@ -267,7 +266,7 @@ extern bool planner_aborted;
 #ifdef PREVENT_DANGEROUS_EXTRUDE
 extern int extrude_min_temp;
 void set_extrude_min_temp(int temp);
-#endif
+#endif //PREVENT_DANGEROUS_EXTRUDE
 
 void reset_acceleration_rates();
 #endif

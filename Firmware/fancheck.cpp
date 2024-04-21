@@ -5,13 +5,21 @@
 #include "messages.h"
 #include "temperature.h"
 #include "stepper.h"
+#include "stopwatch.h"
 
 #define FAN_CHECK_PERIOD 5000 //5s
 #define FAN_CHECK_DURATION 100 //100ms
 
+//Macro for print fan speed
+#define FAN_PULSE_WIDTH_LIMIT ((fanSpeed > 100) ? 3 : 4) //time in ms
+
 #ifdef FANCHECK
 volatile uint8_t fan_check_error = EFCE_OK;
 #endif
+
+#if (defined(FANCHECK) && defined(TACH_1) && (TACH_1 >-1))
+static uint32_t t_fan_rising_edge;
+#endif // #if (defined(FANCHECK) && defined(TACH_1) && (TACH_1 >-1))
 
 #if (defined(EXTRUDER_0_AUTO_FAN_PIN) && EXTRUDER_0_AUTO_FAN_PIN > -1)
   #ifdef EXTRUDER_ALTFAN_DETECT
@@ -86,7 +94,7 @@ void fanSpeedError(unsigned char _fan) {
 
     if (printJobOngoing()) {
         // A print is ongoing, pause the print normally
-        if(!isPrintPaused) {
+        if(!printingIsPaused()) {
             if (usb_timer.running())
                 lcd_pause_usb_print();
             else
@@ -139,6 +147,7 @@ void checkFanSpeed()
     if ((fan_check_error == EFCE_FIXED) && !printer_active()){
         fan_check_error = EFCE_OK; //if the issue is fixed while the printer is doing nothing, reenable processing immediately.
         lcd_reset_alert_level(); //for another fan speed error
+        lcd_setstatuspgm(MSG_WELCOME); // Reset the status line message to visually show the error is gone
     }
     if (fans_check_enabled && (fan_check_error == EFCE_OK))
     {
@@ -153,6 +162,42 @@ void checkFanSpeed()
     }
 }
 #endif //(defined(TACH_0) && TACH_0 >-1) || (defined(TACH_1) && TACH_1 > -1)
+
+#if (defined(FANCHECK) && defined(TACH_1) && (TACH_1 >-1))
+void setup_fan_interrupt() {
+//INT7
+	DDRE &= ~(1 << 7); //input pin
+	PORTE &= ~(1 << 7); //no internal pull-up
+
+	//start with sensing rising edge
+	EICRB &= ~(1 << 6);
+	EICRB |= (1 << 7);
+
+	//enable INT7 interrupt
+	EIMSK |= (1 << 7);
+}
+
+// The fan interrupt is triggered at maximum 325Hz (may be a bit more due to component tollerances),
+// and it takes 4.24 us to process (the interrupt invocation overhead not taken into account).
+ISR(INT7_vect) {
+	//measuring speed now works for fanSpeed > 18 (approximately), which is sufficient because MIN_PRINT_FAN_SPEED is higher
+#ifdef FAN_SOFT_PWM
+	if (!fan_measuring || (fanSpeedSoftPwm < MIN_PRINT_FAN_SPEED)) return;
+#else //FAN_SOFT_PWM
+	if (fanSpeed < MIN_PRINT_FAN_SPEED) return;
+#endif //FAN_SOFT_PWM
+
+	if ((1 << 6) & EICRB) { //interrupt was triggered by rising edge
+		t_fan_rising_edge = millis_nc();
+	}
+	else { //interrupt was triggered by falling edge
+		if ((millis_nc() - t_fan_rising_edge) >= FAN_PULSE_WIDTH_LIMIT) {//this pulse was from sensor and not from pwm
+			fan_edge_counter[1] += 2; //we are currently counting all edges so lets count two edges for one pulse
+		}
+	}	
+	EICRB ^= (1 << 6); //change edge
+}
+#endif //(defined(FANCHECK) && defined(TACH_1) && (TACH_1 >-1))
 
 #ifdef EXTRUDER_ALTFAN_DETECT
 ISR(INT6_vect) {
@@ -193,7 +238,7 @@ bool extruder_altfan_detect()
 void altfanOverride_toggle()
 {
     altfanStatus.altfanOverride = !altfanStatus.altfanOverride;
-    eeprom_update_byte((uint8_t *)EEPROM_ALTFAN_OVERRIDE, altfanStatus.altfanOverride);
+    eeprom_update_byte_notify((uint8_t *)EEPROM_ALTFAN_OVERRIDE, altfanStatus.altfanOverride);
 }
 
 bool altfanOverride_get()
@@ -220,6 +265,7 @@ void checkExtruderAutoFans()
 
 #if (defined(FANCHECK) && defined(TACH_0) && (TACH_0 > -1))
 void readFanTach() {
+    static bool fan_state[2];
 #ifdef FAN_SOFT_PWM
     if (READ(TACH_0) != fan_state[0]) {
         if(fan_measuring) fan_edge_counter[0] ++;

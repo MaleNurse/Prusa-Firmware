@@ -14,20 +14,16 @@ const uint16_t FW_VERSION_NR[4] PROGMEM = {
     FW_MAJOR,
     FW_MINOR,
     FW_REVISION,
-#ifndef FW_FLAVOR
-    FW_COMMIT_NR
-#else
-#   if FW_DEV_VERSION == FW_VERSION_ALPHA
-    FIRMWARE_REVISION_ALPHA + FW_FLAVERSION
-#   elif FW_DEV_VERSION == FW_VERSION_BETA
-    FIRMWARE_REVISION_BETA + FW_FLAVERSION
-#   elif FW_DEV_VERSION == FW_VERSION_RC
-    FIRMWARE_REVISION_RC + FW_FLAVERSION
-#   elif FW_DEV_VERSION == FW_VERSION_GOLD
-    0
-#   endif
-#endif
+    FW_TWEAK,
 };
+
+const char FW_VERSION_HASH[] PROGMEM = FW_COMMIT_HASH;
+static_assert(sizeof(FW_VERSION_HASH) == FW_COMMIT_HASH_LENGTH + 1);
+
+const char* FW_VERSION_HASH_P()
+{
+    return FW_VERSION_HASH;
+}
 
 const char* FW_VERSION_STR_P()
 {
@@ -159,7 +155,7 @@ inline bool strncmp_PP(const char *p1, const char *p2, uint8_t n)
 				return -1;
 			if (pgm_read_byte(p1) > pgm_read_byte(p2))
 				return 1;
-		}            
+		}
     }
     return 0;
 }
@@ -210,11 +206,11 @@ bool show_upgrade_dialog_if_version_newer(const char *version_string)
         return false;
 
     if (upgrade) {
-        lcd_display_message_fullscreen_P(_i("New firmware version available:"));////MSG_NEW_FIRMWARE_AVAILABLE c=20 r=2
+        lcd_display_message_fullscreen_P(_T(MSG_NEW_FIRMWARE_AVAILABLE));
         lcd_puts_at_P(0, 2, PSTR(""));
         for (const char *c = version_string; ! is_whitespace_or_nl_or_eol(*c); ++ c)
             lcd_putc(*c);
-        lcd_puts_at_P(0, 3, _i("Please upgrade."));////MSG_NEW_FIRMWARE_PLEASE_UPGRADE c=20
+        lcd_puts_at_P(0, 3, _T(MSG_NEW_FIRMWARE_PLEASE_UPGRADE));
         Sound_MakeCustom(50,1000,false);
         delay_keep_alive(500);
         Sound_MakeCustom(50,1000,false);
@@ -231,58 +227,41 @@ bool show_upgrade_dialog_if_version_newer(const char *version_string)
 void update_current_firmware_version_to_eeprom()
 {
     for (int8_t i = 0; i < FW_PRUSA3D_MAGIC_LEN; ++ i){
-        eeprom_update_byte((uint8_t*)(EEPROM_FIRMWARE_PRUSA_MAGIC+i), pgm_read_byte(FW_PRUSA3D_MAGIC_STR+i));
+        eeprom_update_byte_notify((uint8_t*)(EEPROM_FIRMWARE_PRUSA_MAGIC+i), pgm_read_byte(FW_PRUSA3D_MAGIC_STR+i));
     }
-    eeprom_update_word((uint16_t*)EEPROM_FIRMWARE_VERSION_MAJOR,    (uint16_t)pgm_read_word(&FW_VERSION_NR[0]));
-    eeprom_update_word((uint16_t*)EEPROM_FIRMWARE_VERSION_MINOR,    (uint16_t)pgm_read_word(&FW_VERSION_NR[1]));
-    eeprom_update_word((uint16_t*)EEPROM_FIRMWARE_VERSION_REVISION, (uint16_t)pgm_read_word(&FW_VERSION_NR[2]));
+    eeprom_update_word_notify((uint16_t*)EEPROM_FIRMWARE_VERSION_MAJOR,    (uint16_t)pgm_read_word(&FW_VERSION_NR[0]));
+    eeprom_update_word_notify((uint16_t*)EEPROM_FIRMWARE_VERSION_MINOR,    (uint16_t)pgm_read_word(&FW_VERSION_NR[1]));
+    eeprom_update_word_notify((uint16_t*)EEPROM_FIRMWARE_VERSION_REVISION, (uint16_t)pgm_read_word(&FW_VERSION_NR[2]));
     // See FirmwareRevisionFlavorType for the definition of firmware flavors.
-    eeprom_update_word((uint16_t*)EEPROM_FIRMWARE_VERSION_FLAVOR,   (uint16_t)pgm_read_word(&FW_VERSION_NR[3]));
+    eeprom_update_word_notify((uint16_t*)EEPROM_FIRMWARE_VERSION_FLAVOR,   (uint16_t)pgm_read_word(&FW_VERSION_NR[3]));
 }
 
-ClNozzleDiameter oNozzleDiameter=ClNozzleDiameter::_Diameter_400;
-ClCheckMode oCheckMode=ClCheckMode::_None;
-ClCheckModel oCheckModel=ClCheckModel::_None;
-ClCheckVersion oCheckVersion=ClCheckVersion::_None;
-ClCheckGcode oCheckGcode=ClCheckGcode::_None;
+ClNozzleDiameter oNozzleDiameter;
+ClCheckMode oCheckMode;
+ClCheckModel oCheckModel;
+ClCheckVersion oCheckVersion;
+ClCheckGcode oCheckGcode;
 
 void fCheckModeInit() {
-    oCheckMode = (ClCheckMode)eeprom_read_byte((uint8_t *)EEPROM_CHECK_MODE);
-    if (oCheckMode == ClCheckMode::_Undef) {
-        oCheckMode = ClCheckMode::_Warn;
-        eeprom_update_byte((uint8_t *)EEPROM_CHECK_MODE, (uint8_t)oCheckMode);
-    }
+    oCheckMode = (ClCheckMode)eeprom_init_default_byte((uint8_t *)EEPROM_CHECK_MODE, (uint8_t)ClCheckMode::_Warn);
+
     if (farm_mode) {
         oCheckMode = ClCheckMode::_Strict;
-        eeprom_init_default_word((uint16_t *)EEPROM_NOZZLE_DIAMETER_uM, EEPROM_NOZZLE_DIAMETER_uM_DEFAULT);
+        eeprom_update_byte_notify((uint8_t *)EEPROM_CHECK_MODE, (uint8_t)ClCheckMode::_Strict);
     }
-    oNozzleDiameter = (ClNozzleDiameter)eeprom_read_byte((uint8_t *)EEPROM_NOZZLE_DIAMETER);
-    if ((oNozzleDiameter == ClNozzleDiameter::_Diameter_Undef) && !farm_mode) {
-        oNozzleDiameter = ClNozzleDiameter::_Diameter_400;
-        eeprom_update_byte((uint8_t *)EEPROM_NOZZLE_DIAMETER, (uint8_t)oNozzleDiameter);
-        eeprom_update_word((uint16_t *)EEPROM_NOZZLE_DIAMETER_uM, EEPROM_NOZZLE_DIAMETER_uM_DEFAULT);
-    }
-    oCheckModel = (ClCheckModel)eeprom_read_byte((uint8_t *)EEPROM_CHECK_MODEL);
-    if (oCheckModel == ClCheckModel::_Undef) {
-        oCheckModel = ClCheckModel::_Warn;
-        eeprom_update_byte((uint8_t *)EEPROM_CHECK_MODEL, (uint8_t)oCheckModel);
-    }
-    oCheckVersion = (ClCheckVersion)eeprom_read_byte((uint8_t *)EEPROM_CHECK_VERSION);
-    if (oCheckVersion == ClCheckVersion::_Undef) {
-        oCheckVersion = ClCheckVersion::_Warn;
-        eeprom_update_byte((uint8_t *)EEPROM_CHECK_VERSION, (uint8_t)oCheckVersion);
-    }
-    oCheckGcode = (ClCheckGcode)eeprom_read_byte((uint8_t *)EEPROM_CHECK_GCODE);
-    if (oCheckGcode == ClCheckGcode::_Undef) {
-        oCheckGcode = ClCheckGcode::_Warn;
-        eeprom_update_byte((uint8_t *)EEPROM_CHECK_GCODE, (uint8_t)oCheckGcode);
-    }
+
+    oNozzleDiameter = (ClNozzleDiameter)eeprom_init_default_byte((uint8_t *)EEPROM_NOZZLE_DIAMETER, (uint8_t)ClNozzleDiameter::_Diameter_400);
+    eeprom_init_default_word((uint16_t *)EEPROM_NOZZLE_DIAMETER_uM, EEPROM_NOZZLE_DIAMETER_uM_DEFAULT);
+
+    oCheckModel = (ClCheckModel)eeprom_init_default_byte((uint8_t *)EEPROM_CHECK_MODEL, (uint8_t)ClCheckModel::_Warn);
+    oCheckVersion = (ClCheckVersion)eeprom_init_default_byte((uint8_t *)EEPROM_CHECK_VERSION, (uint8_t)ClCheckVersion::_Warn);
+    oCheckGcode = (ClCheckGcode)eeprom_init_default_byte((uint8_t *)EEPROM_CHECK_GCODE, (uint8_t)ClCheckGcode::_Warn);
 }
 
 static void render_M862_warnings(const char* warning, const char* strict, uint8_t check)
 {
     if (check == 1) { // Warning, stop print if user selects 'No'
-        if (lcd_show_fullscreen_message_yes_no_and_wait_P(warning, true, LCD_LEFT_BUTTON_CHOICE) == LCD_MIDDLE_BUTTON_CHOICE) {
+        if (lcd_show_multiscreen_message_yes_no_and_wait_P(warning, true, LCD_LEFT_BUTTON_CHOICE) == LCD_MIDDLE_BUTTON_CHOICE) {
             lcd_print_stop();
         }
     } else if (check == 2) { // Strict, always stop print
@@ -406,34 +385,17 @@ void gcode_level_check(uint16_t nGcodeLevel) {
     );
 }
 
-#define GCODE_DELIMITER '"'
-
-char *code_string(const char *pStr, size_t *nLength) {
-char* pStrBegin;
-char* pStrEnd;
-
-pStrBegin=strchr(pStr,GCODE_DELIMITER);
-if(!pStrBegin)
-     return(NULL);
-pStrBegin++;
-pStrEnd=strchr(pStrBegin,GCODE_DELIMITER);
-if(!pStrEnd)
-     return(NULL);
-*nLength=pStrEnd-pStrBegin;
-return pStrBegin;
-}
 
 void printer_smodel_check(const char *pStrPos, const char *actualPrinterSModel) {
-char* pResult;
-size_t nLength,nPrinterNameLength;
+    unquoted_string smodel = unquoted_string(pStrPos);
 
-nPrinterNameLength = strlen_P(actualPrinterSModel);
-pResult=code_string(pStrPos,&nLength);
+    if(smodel.WasFound()) {
+        const uint8_t compareLength = strlen_P(actualPrinterSModel);
 
-if(pResult != NULL && nLength == nPrinterNameLength) {
-     // Only compare them if the lengths match
-     if (strncmp_P(pResult, actualPrinterSModel, nLength) == 0) return;
-}
+        if(compareLength == smodel.GetLength()) {
+            if (strncmp_P(smodel.GetUnquotedString(), actualPrinterSModel, compareLength) == 0) return;
+        }
+    }
 
     render_M862_warnings(
         _T(MSG_GCODE_DIFF_PRINTER_CONTINUE)
@@ -476,12 +438,12 @@ void calibration_status_set(CalibrationStatus components)
 {
     CalibrationStatus status = eeprom_read_byte((uint8_t*)EEPROM_CALIBRATION_STATUS_V2);
     status |= components;
-    eeprom_update_byte((uint8_t*)EEPROM_CALIBRATION_STATUS_V2, status);
+    eeprom_update_byte_notify((uint8_t*)EEPROM_CALIBRATION_STATUS_V2, status);
 }
 
 void calibration_status_clear(CalibrationStatus components)
 {
     CalibrationStatus status = eeprom_read_byte((uint8_t*)EEPROM_CALIBRATION_STATUS_V2);
     status &= ~components;
-    eeprom_update_byte((uint8_t*)EEPROM_CALIBRATION_STATUS_V2, status);
+    eeprom_update_byte_notify((uint8_t*)EEPROM_CALIBRATION_STATUS_V2, status);
 }

@@ -23,19 +23,34 @@ avr_ram()
     avr_size "$@" | sed -ne 's/^Data: *\([0-9]\+\).*/\1/p'
 }
 
-echo "This PR will consume:" > "$MESSAGE"
+cat <<EOF > "$MESSAGE"
+All values in bytes. Δ Delta to base
+
+| Target| ΔFlash | ΔSRAM | Used Flash | Used SRAM | Free Flash | Free SRAM |
+| ------| ------ | ----- | -----------| --------- | ---------- | --------- |
+EOF
+
+einsy_max_upload_size=$(grep "prusa_einsy_rambo.upload.maximum_size" .dependencies/prusa3dboards-*/boards.txt | cut -d "=" -f2)
+einsy_max_upload_data_size=8192
+
 for TARGET in $@
 do
-    base_bin=$(echo ${BASE_DIR}/build_gen/*/$TARGET)
+    # strip the multilang prefix
+    variant=${TARGET%_MULTILANG}
+
+    base_bin=$(echo ${BASE_DIR}/build_gen/$variant/${variant}_lang_base)
     base_flash=$(avr_flash "$base_bin")
     base_ram=$(avr_ram "$base_bin")
 
-    pr_bin=$(echo ${PR_DIR}/build_gen/*/$TARGET)
+    pr_bin=$(echo ${PR_DIR}/build_gen/$variant/${variant}_lang_base)
     pr_flash=$(avr_flash "$pr_bin")
     pr_ram=$(avr_ram "$pr_bin")
 
     flash_d=$(($pr_flash - $base_flash))
     ram_d=$(($pr_ram - $base_ram))
 
-    echo "- \`$TARGET\`: ${flash_d}b of flash, ${ram_d}b of ram" >> "$MESSAGE"
+    flash_free=$(($einsy_max_upload_size - $pr_flash))
+    ram_free=$(($einsy_max_upload_data_size - $pr_ram))
+
+    echo "| \`$TARGET\` | $flash_d | $ram_d | $pr_flash | $pr_ram | $flash_free | $ram_free |" >> "$MESSAGE"
 done

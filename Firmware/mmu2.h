@@ -5,14 +5,11 @@
 #include "mmu2_marlin.h"
 
 #ifdef __AVR__
-#include "mmu2_protocol_logic.h"
+    #include "mmu2_protocol_logic.h"
 typedef float feedRate_t;
 
 #else
-
     #include "protocol_logic.h"
-    #include "../../Marlin/src/core/macros.h"
-    #include "../../Marlin/src/core/types.h"
     #include <atomic>
 #endif
 
@@ -42,15 +39,18 @@ public:
     /// Stops the protocol logic, closes the UART, powers OFF the MMU
     void Stop();
 
+    /// Serial output of MMU state
+    void Status();
+
     inline xState State() const { return state; }
 
     inline bool Enabled() const { return State() == xState::Active; }
 
     /// Different levels of resetting the MMU
     enum ResetForm : uint8_t {
-        Software = 0,   ///< sends a X0 command into the MMU, the MMU will watchdog-reset itself
-        ResetPin = 1,   ///< trigger the reset pin of the MMU
-        CutThePower = 2, ///< power off and power on (that includes +5V and +24V power lines)
+        Software = 0,     ///< sends a X0 command into the MMU, the MMU will watchdog-reset itself
+        ResetPin = 1,     ///< trigger the reset pin of the MMU
+        CutThePower = 2,  ///< power off and power on (that includes +5V and +24V power lines)
         EraseEEPROM = 42, ///< erase MMU EEPROM and then perform a software reset
     };
 
@@ -68,6 +68,10 @@ public:
         ErrorSourceMMU = 1,
         ErrorSourceNone = 0xFF,
     };
+
+    /// Tune value in MMU registers as a way to recover from errors
+    /// e.g. Idler Stallguard threshold
+    void Tune();
 
     /// Perform a reset of the MMU
     /// @param level physical form of the reset
@@ -159,8 +163,14 @@ public:
     /// @returns Current error code
     inline ErrorCode MMUCurrentErrorCode() const { return logic.Error(); }
 
+    /// @returns Command in progress
+    inline uint8_t GetCommandInProgress() const { return logic.CommandInProgress(); }
+
     /// @returns Last error source
     inline ErrorSource MMULastErrorSource() const { return lastErrorSource; }
+
+    /// @returns Last error code
+    inline ErrorCode GetLastErrorCode() const { return lastErrorCode; }
 
     /// @returns the version of the connected MMU FW.
     /// In the future we'll return the trully detected FW version
@@ -172,16 +182,13 @@ public:
         }
     }
 
-    // Helper variable to monitor knob in MMU error screen in blocking functions e.g. manage_response
-    bool is_mmu_error_monitor_active;
-
     /// Method to read-only mmu_print_saved
     inline bool MMU_PRINT_SAVED() const { return mmu_print_saved != SavedState::None; }
 
     /// Automagically "press" a Retry button if we have any retry attempts left
     /// @param ec ErrorCode enum value
     /// @returns true if auto-retry is ongoing, false when retry is unavailable or retry attempts are all used up
-    bool RetryIfPossible(uint16_t ec);
+    bool RetryIfPossible(ErrorCode ec);
 
     /// @return count for toolchange in current print
     inline uint16_t ToolChangeCounter() const { return toolchange_counter; };
@@ -193,7 +200,46 @@ public:
     inline void IncrementTMCFailures() { ++tmcFailures; }
     inline void ClearTMCFailures() { tmcFailures = 0; }
 
+    /// Retrieve cached value parsed from ReadRegister()
+    /// or using M707
+    inline uint16_t GetLastReadRegisterValue() const {
+        return lastReadRegisterValue;
+    };
+    inline void InvokeErrorScreen(ErrorCode ec) {
+        // The printer may not raise an error when the MMU is busy
+        if (!logic.CommandInProgress()                // MMU must not be busy
+            && MMUCurrentErrorCode() == ErrorCode::OK // The protocol must not be in error state
+            && lastErrorCode != ec)                   // The error code is not a duplicate
+        {
+            ReportError(ec, ErrorSource::ErrorSourcePrinter);
+        }
+    }
+
+    void ClearPrinterError() {
+        logic.ClearPrinterError();
+        lastErrorCode = ErrorCode::OK;
+        lastErrorSource = ErrorSource::ErrorSourceNone;
+    }
+
+    /// @brief Queue a button operation which the printer can act upon
+    /// @param btn Button operation
+    inline void SetPrinterButtonOperation(Buttons btn) {
+        printerButtonOperation = btn;
+    }
+
+    /// @brief Get the printer button operation
+    /// @return currently set printer button operation, it can be NoButton if nothing is queued
+    inline Buttons GetPrinterButtonOperation() {
+        return printerButtonOperation;
+    }
+
+    inline void ClearPrinterButtonOperation() {
+        printerButtonOperation = Buttons::NoButton;
+    }
+
+#ifndef UNITTEST
 private:
+#endif
     /// Perform software self-reset of the MMU (sends an X0 command)
     void ResetX0();
 
@@ -241,6 +287,11 @@ private:
 
     /// Responds to a change of MMU's progress
     /// - plans additional steps, e.g. starts the E-motor after fsensor trigger
+    /// The function is quite complex, because it needs to handle asynchronnous
+    /// progress and error reports coming from the MMU without an explicit command
+    /// - typically after MMU's start or after some HW issue on the MMU.
+    /// It must ensure, that calls to @ref ReportProgress and/or @ref ReportError are
+    /// only executed after @ref BeginReport has been called first.
     void OnMMUProgressMsg(ProgressCode pc);
     /// Progress code changed - act accordingly
     void OnMMUProgressMsgChanged(ProgressCode pc);
@@ -286,6 +337,10 @@ private:
     bool ToolChangeCommonOnce(uint8_t slot);
 
     void HelpUnloadToFinda();
+    void UnloadInner();
+    void CutFilamentInner(uint8_t slot);
+
+    void SetCurrentTool(uint8_t ex);
 
     ProtocolLogic logic;          ///< implementation of the protocol logic layer
     uint8_t extruder;             ///< currently active slot in the MMU ... somewhat... not sure where to get it from yet
@@ -298,6 +353,8 @@ private:
     ErrorCode lastErrorCode = ErrorCode::MMU_NOT_RESPONDING;
     ErrorSource lastErrorSource = ErrorSource::ErrorSourceNone;
     Buttons lastButton = Buttons::NoButton;
+    uint16_t lastReadRegisterValue = 0;
+    Buttons printerButtonOperation = Buttons::NoButton;
 
     StepStatus logicStepLastStatus;
 
@@ -307,10 +364,6 @@ private:
     bool loadFilamentStarted;
     bool unloadFilamentStarted;
 
-    friend struct LoadingToNozzleRAII;
-    /// true in case we are doing the LoadToNozzle operation - that means the filament shall be loaded all the way down to the nozzle
-    /// unlike the mid-print ToolChange commands, which only load the first ~30mm and then the G-code takes over.
-    bool loadingToNozzle;
     uint16_t toolchange_counter;
     uint16_t tmcFailures;
 };

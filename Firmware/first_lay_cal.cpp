@@ -5,8 +5,8 @@
 
 #include "first_lay_cal.h"
 #include "Configuration_var.h"
-#include "language.h"
 #include "Marlin.h"
+#include "messages.h"
 #include "cmdqueue.h"
 #include "mmu2.h"
 #include <avr/pgmspace.h>
@@ -33,32 +33,41 @@ static constexpr float spacing(float layer_height, float extrusion_width, float 
     return extrusion_width - layer_height * (overlap_factor - M_PI/4);
 }
 
+// Common code extracted into one function to reduce code size
+static void lay1cal_common_enqueue_loop(const char * const * cmd_sequence, const uint8_t steps) {
+    for (uint8_t i = 0; i < steps; ++i)
+    {
+        enquecommand_P(static_cast<char*>(pgm_read_ptr(cmd_sequence + i)));
+    }
+}
+
 static const char extrude_fmt[] PROGMEM = "G1 X%d Y%d E%-.5f";
 static const char zero_extrusion[] PROGMEM = "G92 E0";
 
 //! @brief Wait for preheat
 void lay1cal_wait_preheat()
 {
-    const char * const preheat_cmd[] =
+    static const char preheat_cmd_2[] PROGMEM = "M190";
+    static const char preheat_cmd_3[] PROGMEM = "M109";
+    static const char preheat_cmd_4[] PROGMEM = "G28";
+
+    static const char * const preheat_cmd[] PROGMEM =
     {
         MSG_M107,
-        PSTR("M190"),
-        PSTR("M109"),
-        PSTR("G28"),
+        preheat_cmd_2,
+        preheat_cmd_3,
+        preheat_cmd_4,
         zero_extrusion
     };
 
-    for (uint8_t i = 0; i < (sizeof(preheat_cmd)/sizeof(preheat_cmd[0])); ++i)
-    {
-        enquecommand_P(preheat_cmd[i]);
-    }
+    lay1cal_common_enqueue_loop(preheat_cmd, sizeof(preheat_cmd)/sizeof(preheat_cmd[0]));
 }
 
 //! @brief Load filament
 //! @param cmd_buffer character buffer needed to format gcodes
 //! @param filament filament to use (applies for MMU only)
 //! @returns true if extra purge distance is needed in case of MMU prints (after a toolchange), otherwise false
-bool lay1cal_load_filament(char *cmd_buffer, uint8_t filament)
+bool lay1cal_load_filament(uint8_t filament)
 {
     if (MMU2::mmu2.Enabled())
     {
@@ -72,16 +81,10 @@ bool lay1cal_load_filament(char *cmd_buffer, uint8_t filament)
             return false;
         } else if( currentTool != (uint8_t)MMU2::FILAMENT_UNKNOWN){
             // some other slot is loaded, perform an unload first
-            enquecommand_P(MSG_M702_NO_LIFT);
+            enquecommand_P(MSG_M702);
         }
         // perform a toolchange
-        // sprintf_P(cmd_buffer, PSTR("T%d"), filament);
-        // rewriting the trivial T<filament> g-code command saves 30B:
-        cmd_buffer[0] = 'T';
-        cmd_buffer[1] = filament + '0';
-        cmd_buffer[2] = 0;
-
-        enquecommand(cmd_buffer);
+        enquecommandf_P(PSTR("T%d"), filament);
         return true;
     }
     return false;
@@ -128,12 +131,9 @@ void lay1cal_intro_line(bool extraPurgeNeeded, float layer_height, float extrusi
     }
     else
     {
-        char cmd_buffer[30];
         static const char fmt1[] PROGMEM = "G1 X%d E%-.3f F1000";
-        sprintf_P(cmd_buffer, fmt1, 60, count_e(layer_height, extrusion_width * 4.f, 60));
-        enquecommand(cmd_buffer);
-        sprintf_P(cmd_buffer, fmt1, 100, count_e(layer_height, extrusion_width * 8.f, 40));
-        enquecommand(cmd_buffer);
+        enquecommandf_P(fmt1, 60, count_e(layer_height, extrusion_width * 4.f, 60));
+        enquecommandf_P(fmt1, 100, count_e(layer_height, extrusion_width * 8.f, 40));
     }
 }
 
@@ -157,40 +157,29 @@ void lay1cal_before_meander()
             cmd_pre_meander_7,
     };
 
-    for (uint8_t i = 0; i < (sizeof(cmd_pre_meander)/sizeof(cmd_pre_meander[0])); ++i)
-    {
-        enquecommand_P(static_cast<char*>(pgm_read_ptr(&cmd_pre_meander[i])));
-    }
+    lay1cal_common_enqueue_loop(cmd_pre_meander, (sizeof(cmd_pre_meander)/sizeof(cmd_pre_meander[0])));
 }
 
 //! @brief Print meander start
 void lay1cal_meander_start(float layer_height, float extrusion_width)
 {
-    char cmd_buffer[30];
     enquecommand_P(PSTR("G1 X50 Y155"));
 
     static const char fmt1[] PROGMEM = "G1 Z%-.3f F7200";
-    sprintf_P(cmd_buffer, fmt1, layer_height);
-    enquecommand(cmd_buffer);
+    enquecommandf_P(fmt1, layer_height);
 
     enquecommand_P(PSTR("G1 F1080"));
 
-    sprintf_P(cmd_buffer, extrude_fmt,  75, 155, count_e(layer_height, extrusion_width * 4.f, 25));
-    enquecommand(cmd_buffer);
-    sprintf_P(cmd_buffer, extrude_fmt, 100, 155, count_e(layer_height, extrusion_width * 2.f, 25));
-    enquecommand(cmd_buffer);
-    sprintf_P(cmd_buffer, extrude_fmt, 200, 155, count_e(layer_height, extrusion_width, 100));
-    enquecommand(cmd_buffer);
-    sprintf_P(cmd_buffer, extrude_fmt, 200, 135, count_e(layer_height, extrusion_width, 20));
-    enquecommand(cmd_buffer);
+    enquecommandf_P(extrude_fmt,  75, 155, count_e(layer_height, extrusion_width * 4.f, 25));
+    enquecommandf_P(extrude_fmt, 100, 155, count_e(layer_height, extrusion_width * 2.f, 25));
+    enquecommandf_P(extrude_fmt, 200, 155, count_e(layer_height, extrusion_width, 100));
+    enquecommandf_P(extrude_fmt, 200, 135, count_e(layer_height, extrusion_width, 20));
 }
 
 //! @brief Print meander
 //! @param cmd_buffer character buffer needed to format gcodes
 void lay1cal_meander(float layer_height, float extrusion_width)
 {
-    char cmd_buffer[30];
-
     const float short_length = 20;
     float long_length = 150;
     const float long_extrusion = count_e(layer_height, extrusion_width, long_length);
@@ -200,13 +189,11 @@ void lay1cal_meander(float layer_height, float extrusion_width)
     uint8_t x_pos = 50;
     for(uint8_t i = 0; i <= 4; ++i)
     {
-        sprintf_P(cmd_buffer, extrude_fmt, x_pos, y_pos, long_extrusion);
-        enquecommand(cmd_buffer);
+        enquecommandf_P(extrude_fmt, x_pos, y_pos, long_extrusion);
 
         y_pos -= short_length;
 
-        sprintf_P(cmd_buffer, extrude_fmt, x_pos, y_pos, short_extrusion);
-        enquecommand(cmd_buffer);
+        enquecommandf_P(extrude_fmt, x_pos, y_pos, short_extrusion);
 
         x_pos += long_length;
 
@@ -223,7 +210,6 @@ void lay1cal_meander(float layer_height, float extrusion_width)
 //! @param i iteration
 void lay1cal_square(uint8_t step, float layer_height, float extrusion_width)
 {
-    char cmd_buffer[30];
     const float long_length = 20;
     const float short_length = spacing(layer_height, extrusion_width);
     const float long_extrusion = count_e(layer_height, extrusion_width, long_length);
@@ -232,14 +218,10 @@ void lay1cal_square(uint8_t step, float layer_height, float extrusion_width)
 
     for (uint8_t i = step; i < step+4; ++i)
     {
-        sprintf_P(cmd_buffer, fmt1, 70, (35 - i*short_length * 2), long_extrusion);
-        enquecommand(cmd_buffer);
-        sprintf_P(cmd_buffer, fmt1, 70, (35 - (2 * i + 1)*short_length), short_extrusion);
-        enquecommand(cmd_buffer);
-        sprintf_P(cmd_buffer, fmt1, 50, (35 - (2 * i + 1)*short_length), long_extrusion);
-        enquecommand(cmd_buffer);
-        sprintf_P(cmd_buffer, fmt1, 50, (35 - (i + 1)*short_length * 2), short_extrusion);
-        enquecommand(cmd_buffer);
+        enquecommandf_P(fmt1, 70, (35 - i*short_length * 2), long_extrusion);
+        enquecommandf_P(fmt1, 70, (35 - (2 * i + 1)*short_length), short_extrusion);
+        enquecommandf_P(fmt1, 50, (35 - (2 * i + 1)*short_length), long_extrusion);
+        enquecommandf_P(fmt1, 50, (35 - (i + 1)*short_length * 2), short_extrusion);
     }
 }
 
@@ -261,11 +243,8 @@ void lay1cal_finish(bool mmu_enabled)
             cmd_cal_finish_5
     };
 
-    for (uint8_t i = 0; i < (sizeof(cmd_cal_finish)/sizeof(cmd_cal_finish[0])); ++i)
-    {
-        enquecommand_P(static_cast<char*>(pgm_read_ptr(&cmd_cal_finish[i])));
-    }
+    lay1cal_common_enqueue_loop(cmd_cal_finish, (sizeof(cmd_cal_finish)/sizeof(cmd_cal_finish[0])));
 
-    if (mmu_enabled) enquecommand_P(MSG_M702_NO_LIFT); //unload from nozzle
+    if (mmu_enabled) enquecommand_P(MSG_M702); //unload from nozzle
     enquecommand_P(MSG_M84);// disable motors
 }

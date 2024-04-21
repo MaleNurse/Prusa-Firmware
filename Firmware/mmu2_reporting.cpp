@@ -1,8 +1,13 @@
+#include <avr/pgmspace.h>
+#include "eeprom.h"
 #include "mmu2.h"
+#include "mmu2_log.h"
 #include "mmu2_reporting.h"
 #include "mmu2_error_converter.h"
+#include "mmu2_progress_converter.h"
 #include "mmu2/error_codes.h"
 #include "mmu2/buttons.h"
+#include "menu.h"
 #include "ultralcd.h"
 #include "Filament_sensor.h"
 #include "language.h"
@@ -11,16 +16,16 @@
 
 namespace MMU2 {
 
-const char * ProgressCodeToText(uint16_t pc); // we may join progress convertor and reporter together
-
-void BeginReport(CommandInProgress /*cip*/, uint16_t ec) {
+void BeginReport(CommandInProgress /*cip*/, ProgressCode ec) {
     custom_message_type = CustomMsg::MMUProgress;
     lcd_setstatuspgm( _T(ProgressCodeToText(ec)) );
 }
 
-void EndReport(CommandInProgress /*cip*/, uint16_t /*ec*/) {
+void EndReport(CommandInProgress /*cip*/, ProgressCode /*ec*/) {
     // clear the status msg line - let the printed filename get visible again
-    lcd_setstatuspgm(MSG_WELCOME); // should be seen only when the printer is not printing a file
+    if (!printJobOngoing()) {
+        lcd_setstatuspgm(MSG_WELCOME);
+    }
     custom_message_type = CustomMsg::Status;
 }
 
@@ -67,7 +72,6 @@ static void ReportErrorHookStaticRender(uint8_t ei) {
         two_choices = true;
     }
 
-    lcd_set_custom_characters_nextpage();
     lcd_update_enable(false);
     lcd_clear();
 
@@ -99,15 +103,7 @@ void ReportErrorHookSensorLineRender(){
 static uint8_t ReportErrorHookMonitor(uint8_t ei) {
     uint8_t ret = 0;
     bool two_choices = false;
-    static int8_t enc_dif = lcd_encoder_diff;
     static uint8_t reset_button_selection;
-
-    if (lcd_encoder_diff == 0)
-    {
-         // lcd_update_enable(true) was called outside ReportErrorHookMonitor
-         // It will set lcd_encoder_diff to 0, sync enc_dif
-        enc_dif = 0;
-    }
 
     // Read and determine what operations should be shown on the menu
     const uint8_t button_operation   = PrusaErrorButtons(ei);
@@ -132,20 +128,20 @@ static uint8_t ReportErrorHookMonitor(uint8_t ei) {
     }
 
     // Check if knob was rotated
-    if (abs(enc_dif - lcd_encoder_diff) >= ENCODER_PULSES_PER_STEP) {
+    if (lcd_encoder) {
         if (two_choices == false) { // third_choice is not nullptr, safe to dereference
-            if (enc_dif > lcd_encoder_diff && current_selection != LCD_LEFT_BUTTON_CHOICE) {
+            if (lcd_encoder < 0 && current_selection != LCD_LEFT_BUTTON_CHOICE) {
                 // Rotating knob counter clockwise
                 current_selection--;
-            } else if (enc_dif < lcd_encoder_diff && current_selection != LCD_RIGHT_BUTTON_CHOICE) {
+            } else if (lcd_encoder > 0 && current_selection != LCD_RIGHT_BUTTON_CHOICE) {
                 // Rotating knob clockwise
                 current_selection++;
             }
         } else {
-            if (enc_dif > lcd_encoder_diff && current_selection != LCD_LEFT_BUTTON_CHOICE) {
+            if (lcd_encoder < 0 && current_selection != LCD_LEFT_BUTTON_CHOICE) {
                 // Rotating knob counter clockwise
                 current_selection = LCD_LEFT_BUTTON_CHOICE;
-            } else if (enc_dif < lcd_encoder_diff && current_selection != LCD_MIDDLE_BUTTON_CHOICE) {
+            } else if (lcd_encoder > 0 && current_selection != LCD_MIDDLE_BUTTON_CHOICE) {
                 // Rotating knob clockwise
                 current_selection = LCD_MIDDLE_BUTTON_CHOICE;
             }
@@ -179,14 +175,12 @@ static uint8_t ReportErrorHookMonitor(uint8_t ei) {
             // More button for two button screen
             lcd_putc_at(18, 3, current_selection == LCD_MIDDLE_BUTTON_CHOICE ? '>': ' ');
         }
-        // Consume rotation event and make feedback sound
-        enc_dif = lcd_encoder_diff;
-        Sound_MakeSound(e_SOUND_TYPE_EncoderMove);
+        // Consume rotation event
+        lcd_encoder = 0;
     }
 
     // Check if knob was clicked and consume the event
     if (lcd_clicked()) {
-        Sound_MakeSound(e_SOUND_TYPE_ButtonEcho);
         choice_selected = current_selection;
     } else {
         // continue monitoring
@@ -220,7 +214,29 @@ enum class ReportErrorHookStates : uint8_t {
 
 enum ReportErrorHookStates ReportErrorHookState = ReportErrorHookStates::RENDER_ERROR_SCREEN;
 
-void ReportErrorHook(CommandInProgress /*cip*/, uint16_t ec, uint8_t /*es*/) {
+// Helper variable to monitor knob in MMU error screen in blocking functions e.g. manage_response
+static bool is_mmu_error_monitor_active;
+
+// Helper variable to stop rendering the error screen when the firmware is rendering complementary
+// UI to resolve the error screen, for example tuning Idler Stallguard Threshold
+// Set to false to allow the error screen to render again.
+static bool putErrorScreenToSleep;
+
+void CheckErrorScreenUserInput() {
+    if (is_mmu_error_monitor_active) {
+        // Call this every iteration to keep the knob rotation responsive
+        // This includes when mmu_loop is called within manage_response
+        ReportErrorHook((CommandInProgress)mmu2.GetCommandInProgress(), mmu2.GetLastErrorCode(), mmu2.MMULastErrorSource());
+    }
+}
+
+bool TuneMenuEntered() {
+    return putErrorScreenToSleep;
+}
+
+void ReportErrorHook(CommandInProgress /*cip*/, ErrorCode ec, uint8_t /*es*/) {
+    if (putErrorScreenToSleep) return;
+    
     if (mmu2.MMUCurrentErrorCode() == ErrorCode::OK && mmu2.MMULastErrorSource() == MMU2::ErrorSourceMMU) {
         // If the error code suddenly changes to OK, that means
         // a button was pushed on the MMU and the LCD should
@@ -228,15 +244,16 @@ void ReportErrorHook(CommandInProgress /*cip*/, uint16_t ec, uint8_t /*es*/) {
         ReportErrorHookState = ReportErrorHookStates::DISMISS_ERROR_SCREEN;
     }
 
-    const uint8_t ei = PrusaErrorCodeIndex(ec);
+    const uint8_t ei = PrusaErrorCodeIndex((ErrorCode)ec);
 
     switch ((uint8_t)ReportErrorHookState) {
     case (uint8_t)ReportErrorHookStates::RENDER_ERROR_SCREEN:
+        KEEPALIVE_STATE(PAUSED_FOR_USER);
         ReportErrorHookStaticRender(ei);
         ReportErrorHookState = ReportErrorHookStates::MONITOR_SELECTION;
         [[fallthrough]];
     case (uint8_t)ReportErrorHookStates::MONITOR_SELECTION:
-        mmu2.is_mmu_error_monitor_active = true;
+        is_mmu_error_monitor_active = true;
         ReportErrorHookDynamicRender(); // Render dynamic characters
         sound_wait_for_user();
         switch (ReportErrorHookMonitor(ei)) {
@@ -249,12 +266,12 @@ void ReportErrorHook(CommandInProgress /*cip*/, uint16_t ec, uint8_t /*es*/) {
                 break;
             case 2:
                 // Exit error screen and enable lcd updates
-                lcd_set_custom_characters();
                 lcd_update_enable(true);
                 lcd_return_to_status();
                 sound_wait_for_user_reset();
                 // Reset the state in case a new error is reported
-                mmu2.is_mmu_error_monitor_active = false;
+                is_mmu_error_monitor_active = false;
+                KEEPALIVE_STATE(IN_HANDLER);
                 ReportErrorHookState = ReportErrorHookStates::RENDER_ERROR_SCREEN;
                 break;
             default:
@@ -263,12 +280,12 @@ void ReportErrorHook(CommandInProgress /*cip*/, uint16_t ec, uint8_t /*es*/) {
         return; // Always return to loop() to let MMU trigger a call to ReportErrorHook again
         break;
     case (uint8_t)ReportErrorHookStates::DISMISS_ERROR_SCREEN:
-        lcd_set_custom_characters();
         lcd_update_enable(true);
         lcd_return_to_status();
         sound_wait_for_user_reset();
         // Reset the state in case a new error is reported
-        mmu2.is_mmu_error_monitor_active = false;
+        is_mmu_error_monitor_active = false;
+        KEEPALIVE_STATE(IN_HANDLER);
         ReportErrorHookState = ReportErrorHookStates::RENDER_ERROR_SCREEN;
         break;
     default:
@@ -276,29 +293,61 @@ void ReportErrorHook(CommandInProgress /*cip*/, uint16_t ec, uint8_t /*es*/) {
     }
 }
 
-void ReportProgressHook(CommandInProgress cip, uint16_t ec) {
+void ReportProgressHook(CommandInProgress cip, ProgressCode ec) {
     if (cip != CommandInProgress::NoCommand) {
         custom_message_type = CustomMsg::MMUProgress;
         lcd_setstatuspgm( _T(ProgressCodeToText(ec)) );
-    } else {
-        // If there is no command in progress we can display other
-        // useful information such as the name of the SD file 
-        // being printed
-        custom_message_type = CustomMsg::Status;
     }
 }
 
-void TryLoadUnloadProgressbarInit() {
-    // Clear the status line
-    lcd_set_cursor(0, 3);
-    lcd_space(LCD_WIDTH);
+TryLoadUnloadReporter::TryLoadUnloadReporter(float delta_mm)
+: dpixel0(0)
+, dpixel1(0)
+, lcd_cursor_col(0)
+, pixel_per_mm(0.5F * float(LCD_WIDTH) / (delta_mm))
+{
+    lcd_clearstatus();
 }
 
-void TryLoadUnloadProgressbar(uint8_t col, bool sensorState) {
+TryLoadUnloadReporter::~TryLoadUnloadReporter() {
+    // Delay the next status message just so
+    // the user can see the results clearly
+    lcd_reset_status_message_timeout();
+}
+
+void TryLoadUnloadReporter::Render(uint8_t col, bool sensorState) {
     // Set the cursor position each time in case some other
     // part of the firmware changes the cursor position
-    lcd_putc_at(col, 3, sensorState ? '-' : LCD_STR_SOLID_BLOCK[0]);
-    lcd_reset_status_message_timeout();
+    lcd_insert_char_into_status(col, sensorState ? LCD_STR_SOLID_BLOCK[0] : '-');
+    if (!lcd_update_enabled) lcdui_print_status_line();
+}
+
+void TryLoadUnloadReporter::Progress(bool sensorState){
+    // Always round up, you can only have 'whole' pixels. (floor is also an option)
+    dpixel1 = ceil((stepper_get_machine_position_E_mm() - planner_get_current_position_E()) * pixel_per_mm);
+    if (dpixel1 - dpixel0) {
+        dpixel0 = dpixel1;
+        if (lcd_cursor_col > (LCD_WIDTH - 1)) lcd_cursor_col = LCD_WIDTH - 1;
+        Render(lcd_cursor_col++, sensorState);
+    }
+}
+
+void TryLoadUnloadReporter::DumpToSerial(){
+    char buf[LCD_WIDTH + 1];
+    lcd_getstatus(buf);
+    for (uint8_t i = 0; i < sizeof(buf); i++) {
+        // 0xFF is -1 when converting from unsigned to signed char
+        // If the number is negative, that means filament is present
+        buf[i] = (buf[i] < 0) ? '1' : '0';
+    }
+    buf[LCD_WIDTH] = 0;
+    MMU2_ECHO_MSGLN(buf);
+}
+
+/// Disables MMU in EEPROM
+void DisableMMUInSettings() {
+    eeprom_update_byte_notify((uint8_t *)EEPROM_MMU_ENABLED, false);
+    mmu2.Status();
 }
 
 void IncrementLoadFails(){
@@ -309,6 +358,10 @@ void IncrementLoadFails(){
 void IncrementMMUFails(){
     eeprom_increment_byte((uint8_t *)EEPROM_MMU_FAIL);
     eeprom_increment_word((uint16_t *)EEPROM_MMU_FAIL_TOT);
+}
+
+bool cutter_enabled(){
+    return eeprom_read_byte((uint8_t*)EEPROM_MMU_CUTTER_ENABLED) == EEPROM_MMU_CUTTER_ENABLED_enabled;
 }
 
 void MakeSound(SoundType s){
@@ -340,7 +393,7 @@ void FullScreenMsgLoad(uint8_t slot){
 }
 
 void FullScreenMsgRestoringTemperature(){
-    lcd_display_message_fullscreen_P(_i("MMU Retry: Restoring temperature...")); ////MSG_MMU_RESTORE_TEMP c=20 r=4
+    lcd_display_message_fullscreen_P(_T(MSG_MMU_RESTORE_TEMP));
 }
 
 void ScreenUpdateEnable(){
@@ -349,6 +402,70 @@ void ScreenUpdateEnable(){
 
 void ScreenClear(){
     lcd_clear();
+}
+
+struct TuneItem {
+    uint8_t address;
+    uint8_t minValue;
+    uint8_t maxValue;
+} __attribute__((packed));
+
+static const TuneItem TuneItems[] PROGMEM = {
+  { (uint8_t)Register::Selector_sg_thrs_R, 1, 4},
+  { (uint8_t)Register::Idler_sg_thrs_R, 2, 10},
+};
+
+static_assert(sizeof(TuneItems)/sizeof(TuneItem) == 2);
+
+struct _menu_tune_data_t
+{
+    menu_data_edit_t reserved; //13 bytes reserved for number editing functions
+    int8_t status;             // 1 byte
+    uint8_t currentValue;      // 1 byte
+    TuneItem item;             // 3 bytes
+};
+
+static_assert(sizeof(_menu_tune_data_t) == 18);
+static_assert(sizeof(menu_data)>= sizeof(_menu_tune_data_t),"_menu_tune_data_t doesn't fit into menu_data");
+
+void tuneIdlerStallguardThresholdMenu() {
+    static constexpr _menu_tune_data_t * const _md = (_menu_tune_data_t*)&(menu_data[0]);
+
+    // Do not timeout the screen, otherwise there will be FW crash (menu recursion)
+    lcd_timeoutToStatus.stop();
+    if (_md->status == 0)
+    {
+        _md->status = 1; // Menu entered for the first time
+
+        // Fetch the TuneItem from PROGMEM
+        const uint8_t offset = (mmu2.MMUCurrentErrorCode() == ErrorCode::HOMING_IDLER_FAILED) ? 1 : 0;
+        memcpy_P(&(_md->item), &TuneItems[offset], sizeof(TuneItem));
+
+        // Fetch the value which is currently in MMU EEPROM
+        mmu2.ReadRegister(_md->item.address);
+        _md->currentValue = mmu2.GetLastReadRegisterValue();
+    }
+
+    MENU_BEGIN();
+    ON_MENU_LEAVE(
+        mmu2.WriteRegister(_md->item.address, (uint16_t)_md->currentValue);
+        putErrorScreenToSleep = false;
+        lcd_return_to_status();
+        return;
+    );
+    MENU_ITEM_BACK_P(_T(MSG_DONE));
+    MENU_ITEM_EDIT_int3_P(
+        _T(MSG_MMU_SENSITIVITY),
+        &_md->currentValue,
+        _md->item.minValue,
+        _md->item.maxValue
+    );
+    MENU_END();
+}
+
+void tuneIdlerStallguardThreshold() {
+    putErrorScreenToSleep = true;
+    menu_submenu(tuneIdlerStallguardThresholdMenu);
 }
 
 } // namespace MMU2
