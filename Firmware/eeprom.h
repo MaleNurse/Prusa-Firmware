@@ -12,6 +12,7 @@
 #define EEPROM_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include "Configuration_var.h"
 
 // Custom Mendel Name
@@ -106,8 +107,8 @@ static_assert(sizeof(Sheets) == EEPROM_SHEETS_SIZEOF, "Sizeof(Sheets) is not EEP
 | ^           | ^       | ^                                     | f0h 240      | ^               __P__ | needs Z calibration                               | ^            | ^
 | ^           | ^       | ^                                     | fah 250      | ^                     | needs XYZ calibration                             | ^            | ^
 | ^           | ^       | ^                                     | 00h 0        | ^                     | Unknown (legacy)                                  | ^            | ^
-| 0x0FF5 4085 | uint16  | EEPROM_BABYSTEP_Z0                    | ???          | ff ffh 65535          | Babystep for Z ???                                | ???          | D3 Ax0ff5 C2
-| 0x0FF1 4081 | uint32  | EEPROM_FILAMENTUSED                   | ???          | 00 00 00 00h 0 __S/P__| Filament used in meters                           | ???          | D3 Ax0ff1 C4
+| 0x0FF5 4085 | uint16  | _EEPROM_FREE_NR12_                    | ???          | ff ffh 65535          | _Free EEPROM space_                               | _free space_ | D3 Ax0ff5 C2
+| 0x0FF1 4081 | uint32  | EEPROM_FILAMENTUSED                   | ???          | 00 00 00 00h 0 __S/P__| Filament used in centimeters                      | ???          | D3 Ax0ff1 C4
 | 0x0FED 4077 | uint32  | EEPROM_TOTALTIME                      | ???          | 00 00 00 00h 0 __S/P__| Total print time in minutes                       | ???          | D3 Ax0fed C4
 | 0x0FE5 4069 | float   | EEPROM_BED_CALIBRATION_CENTER         | ???          | ff ff ff ffh          | ???                                               | ???          | D3 Ax0fe5 C8
 | 0x0FDD 4061 | float   | EEPROM_BED_CALIBRATION_VEC_X          | ???          | ff ff ff ffh          | ???                                               | ???          | D3 Ax0fdd C8
@@ -413,6 +414,9 @@ static_assert(sizeof(Sheets) == EEPROM_SHEETS_SIZEOF, "Sizeof(Sheets) is not EEP
 | ^           | ^       | ^                                     | ???          | ^                     | Z-axis                                            | ^            | D3 Ax0d29 C4
 | ^           | ^       | ^                                     | ???          | ^                     | Y-axis                                            | ^            | D3 Ax0d25 C4
 | ^           | ^       | ^                                     | ???          | ^                     | X-axis                                            | ^            | D3 Ax0c21 C4
+| 0x0C11 3089 | uint8   | EEPROM_CHECK_FILAMENT                 | 01h 1        | ffh 255               | Check mode for filament is: __warn__              | LCD menu     | D3 Ax0c11 C1
+| ^           | ^       | ^                                     | 02h 2        | ^                     | Check mode for filament is: __strict__            | ^            | ^
+| ^           | ^       | ^                                     | 00h 0        | ^                     | Check mode for filament is: __none__              | ^            | ^
 
 
 |Address begin|Bit/Type | Name                                  | Valid values | Default/FactoryReset  | Description                                       |Gcode/Function| Debug code
@@ -437,7 +441,7 @@ static_assert(sizeof(Sheets) == EEPROM_SHEETS_SIZEOF, "Sizeof(Sheets) is not EEP
 #define _EEPROM_FREE_NR11_ 4090 // uint16_t
 #define EEPROM_BABYSTEP_Z 4088 //legacy, multiple values stored now in EEPROM_Sheets_base
 #define EEPROM_CALIBRATION_STATUS_V1 4087 // legacy, used up to v3.11
-#define EEPROM_BABYSTEP_Z0 4085
+#define _EEPROM_FREE_NR12_ (EEPROM_CALIBRATION_STATUS_V1 - 2) // uint16_t
 #define EEPROM_FILAMENTUSED 4081
 // uint32_t
 #define EEPROM_TOTALTIME 4077
@@ -663,8 +667,9 @@ static Sheets * const EEPROM_Sheets_base = (Sheets*)(EEPROM_SHEETS_BASE);
 #define EEPROM_UVLO_MIN_TRAVEL_FEEDRATE (EEPROM_UVLO_MIN_FEEDRATE-4) //float
 #define EEPROM_UVLO_MIN_SEGMENT_TIME_US (EEPROM_UVLO_MIN_TRAVEL_FEEDRATE-4) //uint32_t
 #define EEPROM_UVLO_MAX_JERK (EEPROM_UVLO_MIN_SEGMENT_TIME_US-4*4) // 4 x float
+#define EEPROM_CHECK_FILAMENT (EEPROM_UVLO_MAX_JERK-1) // uint8_t
 //This is supposed to point to last item to allow EEPROM overrun check. Please update when adding new items.
-#define EEPROM_LAST_ITEM EEPROM_UVLO_MAX_JERK
+#define EEPROM_LAST_ITEM EEPROM_CHECK_FILAMENT
 // !!!!!
 // !!!!! this is end of EEPROM section ... all updates MUST BE inserted before this mark !!!!!
 // !!!!!

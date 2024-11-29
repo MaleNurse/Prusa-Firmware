@@ -47,11 +47,10 @@ void lcd_setalertstatuspgm(const char* message, uint8_t severity = LCD_STATUS_AL
 uint8_t get_message_level();
 void lcd_reset_alert_level();
 
-void lcd_pick_babystep();
 uint8_t lcd_alright();
 void show_preheat_nozzle_warning();
-void lcd_wait_interact();
-void lcd_loading_filament();
+void lcd_wait_interact(const char* filament_name);
+void lcd_loading_filament(const char* filament_name);
 void lcd_change_success();
 void lcd_loading_color();
 void lcd_sdcard_stop();
@@ -73,7 +72,7 @@ void lcd_load_filament_color_check();
 extern void lcd_belttest();
 extern bool lcd_selftest();
 
-void lcd_menu_statistics(); 
+void lcd_menu_statistics();
 
 void lcd_status_screen();                         // NOT static due to using inside "Marlin_main" module ("manage_inactivity()")
 void lcd_menu_extruder_info();                    // NOT static due to using inside "Marlin_main" module ("manage_inactivity()")
@@ -221,6 +220,9 @@ void lcd_temp_calibration_set();
 void lcd_language();
 #endif
 
+void lcd_z_calibration_prompt(bool allowTimeouting);
+void prompt_steel_sheet_on_bed(bool wantedState);
+
 void lcd_wizard();
 
 //! @brief Wizard state
@@ -260,5 +262,7 @@ extern void lcd_heat_bed_on_load_toggle();
 #ifdef COMMUNITY_PREVENT_OOZE
 extern void retract_for_ooze_prevention();
 #endif //COMMUNITY_PREVENT_OOZE
+
+extern void sendHostNotification_P(const char* message);
 
 #endif //ULTRALCD_H

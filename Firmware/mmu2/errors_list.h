@@ -124,10 +124,10 @@ static const constexpr uint16_t errorCodes[] PROGMEM = {
     ERR_ELECTRICAL_MMU_MCU_ERROR,
     ERR_CONNECT_MMU_NOT_RESPONDING,
     ERR_CONNECT_COMMUNICATION_ERROR,
-    ERR_SYSTEM_FILAMENT_ALREADY_LOADED, 
-    ERR_SYSTEM_INVALID_TOOL, 
-    ERR_SYSTEM_QUEUE_FULL, 
-    ERR_SYSTEM_FW_UPDATE_NEEDED, 
+    ERR_SYSTEM_FILAMENT_ALREADY_LOADED,
+    ERR_SYSTEM_INVALID_TOOL,
+    ERR_SYSTEM_QUEUE_FULL,
+    ERR_SYSTEM_FW_UPDATE_NEEDED,
     ERR_SYSTEM_FW_RUNTIME_ERROR,
     ERR_SYSTEM_UNLOAD_MANUALLY,
     ERR_SYSTEM_FILAMENT_EJECTED,
@@ -287,7 +287,7 @@ static const char MSG_DESC_FILAMENT_CHANGE[] PROGMEM_I1 = ISTR("M600 Filament Ch
 static const char MSG_DESC_UNKNOWN_ERROR[] PROGMEM_I1    = ISTR("Unexpected error occurred."); ////MSG_DESC_UNKNOWN_ERROR c=20 r=8
 
 // Read explanation in mmu2_protocol_logic.cpp -> supportedMmuFWVersion
-static constexpr char MSG_DESC_FW_UPDATE_NEEDED[] PROGMEM_I1 = ISTR("MMU FW version is incompatible with printer FW.Update to version 3.0.2."); ////MSG_DESC_FW_UPDATE_NEEDED c=20 r=8
+static constexpr char MSG_DESC_FW_UPDATE_NEEDED[] PROGMEM_I1 = ISTR("MMU FW version is incompatible with printer FW.Update to version 3.0.3."); ////MSG_DESC_FW_UPDATE_NEEDED c=20 r=8
 static constexpr uint8_t szFWUN = sizeof(MSG_DESC_FW_UPDATE_NEEDED);
 // at least check the individual version characters in MSG_DESC_FW_UPDATE_NEEDED
 static_assert(MSG_DESC_FW_UPDATE_NEEDED[szFWUN - 7] == ('0' + mmuVersionMajor));
